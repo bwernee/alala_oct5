@@ -1,0 +1,285 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <!-- Left side: Patient/Standard toggle -->
+    <ion-buttons slot="start">
+      <ion-button class="mode-toggle mode-white" (click)="onPatientModeToggle()">
+        <ion-icon [name]="isPatientMode ? 'lock-closed' : 'lock-open'"></ion-icon>
+        <span>{{ isPatientMode ? 'Patient' : 'Standard' }}</span>
+      </ion-button>
+    </ion-buttons>
+
+    <!-- App title -->
+    <ion-title class="app-title">ALALA</ion-title>
+
+    <!-- Right side: Settings -->
+    <ion-buttons slot="end">
+      <ion-button routerLink="/settings" class="settings-btn" *ngIf="!isPatientMode">
+        <ion-icon name="settings-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content class="game-home-screen" [scrollEvents]="true" [fullscreen]="true">
+  <!-- Floating Background Elements -->
+  <div class="floating-circles">
+    <div class="floating-circle circle-1"></div>
+    <div class="floating-circle circle-2"></div>
+    <div class="floating-circle circle-3"></div>
+  </div>
+
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🧠</div>
+    <div class="floating-emoji emoji-2">💭</div>
+    <div class="floating-emoji emoji-3">❤️</div>
+    <div class="floating-emoji emoji-4">🌟</div>
+  </div>
+
+  <!-- Patient Mode Card (only show when NOT in patient mode) -->
+  <div class="patient-mode-section" *ngIf="!isPatientMode">
+    <div class="patient-mode-card">
+      <div class="mode-info">
+        <div class="mode-icon">
+          <ion-icon name="person-circle" color="primary"></ion-icon>
+        </div>
+        <div class="mode-text">
+          <h3>Patient Mode Available</h3>
+          <p>Simplified interface for memory care</p>
+        </div>
+      </div>
+      <ion-button color="primary" size="small" (click)="enablePatientMode()">
+        Enable
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Profile Header -->
+<div class="game-header">
+  <div class="profile-bubble">
+    <!-- round avatar; no CSS changes needed because ion-avatar is circular -->
+    <ion-avatar class="profile-avatar">
+      <img [src]="userPhoto || 'assets/images/profile-placeholder.png'" alt="Profile" />
+    </ion-avatar>
+
+    <div class="welcome-badge">
+      <h1>Welcome Back{{ userName ? (', ' + userName) : '!' }}</h1>
+      <p>Ready to explore your memories?</p>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Quick Progress Summary (hidden in Patient Mode) -->
+  <div class="game-section" *ngIf="!isPatientMode">
+    <div class="section-header-text">
+      <h2>📊 Today's Progress</h2>
+      <p>Quick overview of your activity</p>
+    </div>
+    <div class="progress-summary-card">
+      <div class="summary-stats">
+        <div class="summary-stat">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <span class="stat-number">{{ todayStats.accuracy }}%</span>
+            <span class="stat-label">Accuracy</span>
+          </div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-icon">📚</div>
+          <div class="stat-info">
+            <span class="stat-number">{{ todayStats.cardsToday }}</span>
+            <span class="stat-label">Cards Today</span>
+          </div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <span class="stat-number">{{ todayStats.avgTime }}s</span>
+            <span class="stat-label">Avg Time</span>
+          </div>
+        </div>
+      </div>
+      <ion-button fill="clear" size="small" routerLink="/progress" class="view-details-btn">
+        View Full Report
+        <ion-icon name="chevron-forward" slot="end"></ion-icon>
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Memory Categories Section -->
+  <div class="game-section">
+    <div class="section-header-text">
+      <!-- Title row with inline + button -->
+      <div class="section-title-row">
+        <h2>🧠 Memory Categories</h2>
+
+        <!-- Add Category button (hidden in Patient Mode) -->
+        <ion-button
+          *ngIf="!isPatientMode"
+          class="icon-btn add-inline"
+          fill="clear"
+          size="small"
+          (click)="onAddCategory()"
+          aria-label="Add Category"
+          title="Add Category">
+          <ion-icon name="add-circle-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <p>Explore your personal memories</p>
+    </div>
+
+    <div class="game-grid memory-categories">
+      <!-- Default categories -->
+      <div class="game-card people-game" routerLink="/people">
+        <div class="card-glow"></div>
+        <div class="game-icon">👨‍👩‍👧‍👦</div>
+        <h3>People</h3>
+        <p>Family & Friends</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          View
+        </div>
+      </div>
+
+      <div class="game-card places-game" routerLink="/places">
+        <div class="card-glow"></div>
+        <div class="game-icon">🏡</div>
+        <h3>Places</h3>
+        <p>Special Locations</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          View
+        </div>
+      </div>
+
+      <div class="game-card objects-game" routerLink="/objects">
+        <div class="card-glow"></div>
+        <div class="game-icon">🧸</div>
+        <h3>Objects</h3>
+        <p>Meaningful Items</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          View
+        </div>
+      </div>
+
+      <!-- User categories (each opens /category/:id) -->
+      <div
+        class="game-card custom-game"
+        *ngFor="let c of userCategories"
+        [routerLink]="['/category', c.id]"
+        [state]="{ categoryName: c.name }"
+        [attr.data-id]="c.id"
+        [attr.aria-label]="'Open ' + c.name + ' category'"
+        role="button"
+        tabindex="0">
+
+        <!-- TOP-RIGHT “×” delete chip (hidden in Patient Mode) -->
+        <button
+          *ngIf="!isPatientMode"
+          class="delete-chip"
+          (click)="onRemoveCategory(c, $event)"
+          title="Remove category"
+          aria-label="Remove category">
+          ×
+        </button>
+
+        <div class="card-glow"></div>
+        <div class="game-icon">{{ c.emoji || '🗂️' }}</div>
+        <h3>{{ c.name }}</h3>
+        <p>{{ c.description || 'Custom category' }}</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          View
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Media Albums Section -->
+  <div class="game-section">
+    <div class="section-header-text">
+      <h2>📸 Media Albums</h2>
+      <p>Photos and videos collection</p>
+    </div>
+
+    <div class="game-grid media-albums">
+      <div class="game-card memory-game" routerLink="/photo-memories">
+        <div class="card-glow"></div>
+        <div class="game-icon">📷</div>
+        <h3>Photo Memories</h3>
+        <p>Browse your photo collection</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          Browse
+        </div>
+      </div>
+
+      <div class="game-card mini-games" routerLink="/video-memories">
+        <div class="card-glow"></div>
+        <div class="game-icon">🎬</div>
+        <h3>Video Memories</h3>
+        <p>Watch special moments</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          Watch
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Brain Games -->
+  <div class="game-section">
+    <div class="section-header-text">
+      <h2>🎮 Brain Games</h2>
+      <p>Fun cognitive exercises</p>
+    </div>
+
+    <div class="game-grid brain-games">
+      <div class="game-card" routerLink="/name-that-memory">
+        <div class="card-glow"></div>
+        <div class="game-icon">🎯</div>
+        <h3>Name That Memory</h3>
+        <p>Identify people and places</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          Play
+        </div>
+      </div>
+
+      <div class="game-card" routerLink="/category-match">
+        <div class="card-glow"></div>
+        <div class="game-icon">🧩</div>
+        <h3>Category Match</h3>
+        <p>Sort items by category</p>
+        <div class="play-button">
+          <ion-icon name="play"></ion-icon>
+          Play
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<!-- Tab Navigation Footer (hidden in Patient Mode) -->
+<div class="tab-footer" *ngIf="!isPatientMode">
+  <div class="tab-nav">
+    <div class="tab-item" routerLink="/people" aria-label="Flashcards">
+      <ion-icon name="albums-outline"></ion-icon>
+      <span>Flashcards</span>
+    </div>
+
+    <div class="tab-item center-home active" routerLink="/home" aria-label="Home">
+      <div class="home-circle">
+        <ion-icon name="home"></ion-icon>
+      </div>
+    </div>
+
+    <div class="tab-item" routerLink="/progress" aria-label="Progress">
+      <ion-icon name="analytics-outline"></ion-icon>
+      <span>Progress</span>
+    </div>
+  </div>
+</div>

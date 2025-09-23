@@ -1,0 +1,82 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <ion-title class="app-title">Login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="login-content" fullscreen>
+  <div class="login-container">
+    <!-- Animated Background -->
+    <div class="background-animation">
+      <div class="floating-circle circle-1"></div>
+      <div class="floating-circle circle-2"></div>
+      <div class="floating-circle circle-3"></div>
+    </div>
+
+    <!-- Logo Section -->
+    <div class="logo-section">
+      <div class="app-logo-container">
+        <div class="logo-ring">
+          <ion-icon name="brain-outline" class="app-logo"></ion-icon>
+        </div>
+      </div>
+      <h1 class="app-name">alala</h1>
+      <p class="tagline">Memory Care Made Simple</p>
+    </div>
+
+    <!-- Login Form -->
+    <div class="login-form">
+      <div class="form-container">
+        <h2>Welcome Back</h2>
+        
+        <div class="input-group">
+          <ion-item class="custom-input">
+            <ion-icon name="mail-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="email" 
+              placeholder="Email" 
+              [(ngModel)]="email" 
+              name="email">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input">
+            <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="password" 
+              placeholder="Password" 
+              [(ngModel)]="password" 
+              name="password">
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-button 
+          expand="block" 
+          class="login-btn" 
+          (click)="login()"
+          [disabled]="isLoading">
+          <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
+          <span *ngIf="!isLoading">Sign In</span>
+          <span *ngIf="isLoading">Signing In...</span>
+          <ion-icon name="arrow-forward-outline" slot="end" *ngIf="!isLoading"></ion-icon>
+        </ion-button>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <div class="signup-section">
+          <p>New to alala?</p>
+          <ion-button 
+            fill="outline" 
+            expand="block" 
+            class="signup-btn" 
+            (click)="goToSignup()">
+            Create Account
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>

@@ -1,0 +1,221 @@
+<!-- Simple App Header (same look as Home) -->
+<ion-header class="app-header">
+  <ion-toolbar>
+    <ion-title class="app-title">ALALA</ion-title>
+
+    <ion-buttons slot="end">
+      <!-- Patient Mode Toggle -->
+      <ion-button class="mode-toggle" (click)="togglePatientMode()">
+        <ion-icon [name]="isPatientMode ? 'lock-closed' : 'lock-open'"></ion-icon>
+        <span>{{ isPatientMode ? 'Patient' : 'Standard' }}</span>
+      </ion-button>
+
+      <!-- Debug Button (temporary) -->
+      <ion-button fill="clear" (click)="forceRefresh()" class="icon-btn">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+
+      <!-- Settings -->
+      <ion-button routerLink="/settings" class="icon-btn">
+        <ion-icon name="settings-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content class="progress-screen">
+  <!-- Loading Spinner -->
+  <div class="loading-container" *ngIf="isLoading">
+    <ion-spinner name="crescent"></ion-spinner>
+    <p>Loading your progress...</p>
+  </div>
+
+  <!-- Content (only show when not loading) -->
+  <div *ngIf="!isLoading">
+    <!-- Period Selection -->
+    <div class="period-selector">
+      <ion-segment [(ngModel)]="selectedPeriod" (ionChange)="onPeriodChange()">
+        <ion-segment-button value="today">
+          <ion-label>Today</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="week">
+          <ion-label>Week</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="month">
+          <ion-label>Month</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="custom">
+          <ion-label>Custom</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="all">
+          <ion-label>All Time</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <!-- Custom Date Range (only show when custom is selected) -->
+    <div class="custom-range" *ngIf="selectedPeriod === 'custom'">
+      <ion-item>
+        <ion-label position="stacked">Start Date</ion-label>
+        <ion-datetime 
+          [(ngModel)]="customStartDate" 
+          presentation="date"
+          (ionChange)="onCustomDateChange()">
+        </ion-datetime>
+      </ion-item>
+      
+      <ion-item>
+        <ion-label position="stacked">End Date</ion-label>
+        <ion-datetime 
+          [(ngModel)]="customEndDate" 
+          presentation="date"
+          (ionChange)="onCustomDateChange()">
+        </ion-datetime>
+      </ion-item>
+    </div>
+
+    <!-- Overall Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card accuracy">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-content">
+          <h3>{{ overallStats.accuracy }}%</h3>
+          <p>Overall Accuracy</p>
+        </div>
+      </div>
+
+      <div class="stat-card time">
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-content">
+          <h3>{{ overallStats.avgTimePerCard }}s</h3>
+          <p>Avg Time/Card</p>
+        </div>
+      </div>
+
+      <div class="stat-card cards">
+        <div class="stat-icon">📚</div>
+        <div class="stat-content">
+          <h3>{{ overallStats.totalCards }}</h3>
+          <p>Cards Reviewed</p>
+        </div>
+      </div>
+
+      <div class="stat-card skipped">
+        <div class="stat-icon">⏭️</div>
+        <div class="stat-content">
+          <h3>{{ overallStats.skippedCards }}</h3>
+          <p>Cards Skipped</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Chart -->
+    <div class="chart-section">
+      <h2>Accuracy Over Time</h2>
+      <div class="chart-container" *ngIf="chartLoaded">
+        <canvas #accuracyChart></canvas>
+      </div>
+      <div class="chart-fallback" *ngIf="!chartLoaded">
+        <div class="fallback-message">
+          <ion-icon name="bar-chart-outline"></ion-icon>
+          <p>Chart visualization temporarily unavailable</p>
+          <p class="small-text">Data is still being tracked in the background</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Performance -->
+    <div class="category-section">
+      <h2>Category Performance</h2>
+      <div class="category-grid">
+        <div class="category-card" *ngFor="let category of categoryStats">
+          <div class="category-header">
+            <span class="category-icon">{{ category.icon }}</span>
+            <h3>{{ category.name }}</h3>
+          </div>
+          <div class="category-stats">
+            <div class="stat-row">
+              <span>Accuracy:</span>
+              <span class="stat-value">{{ category.accuracy }}%</span>
+            </div>
+            <div class="stat-row">
+              <span>Cards Played:</span>
+              <span class="stat-value">{{ category.cardsPlayed }}</span>
+            </div>
+            <div class="stat-row">
+              <span>Avg Time:</span>
+              <span class="stat-value">{{ category.avgTime }}s</span>
+            </div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="category.accuracy"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Session History -->
+    <div class="session-section">
+      <h2>Recent Sessions</h2>
+      <div class="session-list" *ngIf="recentSessions.length > 0">
+        <div class="session-item" *ngFor="let session of recentSessions">
+          <div class="session-date">
+            <ion-icon name="calendar-outline"></ion-icon>
+            {{ session.date | date:'short' }}
+          </div>
+          <div class="session-details">
+            <div class="session-stat">
+              <span>{{ session.category }}</span>
+              <span class="accuracy-badge" [class]="getAccuracyClass(session.accuracy)">
+                {{ session.accuracy }}%
+              </span>
+            </div>
+            <div class="session-meta">
+              {{ session.correctAnswers }}/{{ session.totalQuestions }} correct •
+              {{ session.duration }}min •
+              {{ session.skipped }} skipped
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="no-sessions-message" *ngIf="recentSessions.length === 0">
+        <ion-icon name="school-outline"></ion-icon>
+        <h3>No Quiz Sessions Yet</h3>
+        <p>Take some quizzes to see your recent session history here!</p>
+        <ion-button routerLink="/home" fill="solid" color="primary">
+          <ion-icon name="play" slot="start"></ion-icon>
+          Start a Quiz
+        </ion-button>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<!-- Bottom Tab Footer -->
+<div class="tab-footer">
+  <div class="tab-nav">
+    <!-- Flashcards -->
+    <div class="tab-item" routerLink="/people" aria-label="Flashcards">
+      <ion-icon name="albums-outline"></ion-icon>
+      <span>Flashcards</span>
+    </div>
+
+    <!-- Center Home Button -->
+    <div class="tab-item center-home" routerLink="/home" aria-label="Home">
+      <div class="home-circle">
+        <ion-icon name="home"></ion-icon>
+      </div>
+    </div>
+
+    <!-- Progress (active here) -->
+    <div class="tab-item active" routerLink="/progress" aria-label="Progress">
+      <ion-icon name="analytics-outline"></ion-icon>
+      <span>Progress</span>
+    </div>
+  </div>
+</div>
+
+
+
+

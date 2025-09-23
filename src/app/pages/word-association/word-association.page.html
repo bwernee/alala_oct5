@@ -1,0 +1,117 @@
+<ion-header>
+  <ion-toolbar color="transparent">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/mini-games" fill="clear" color="light">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title color="light" class="header-title">💭 Word Association</ion-title>
+    <ion-buttons slot="end">
+      <div class="score-display">
+        <span class="score-number">{{score}}</span>
+        <span class="score-label">Score</span>
+      </div>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="word-game-screen" fullscreen>
+  <div class="header-spacer"></div>
+  
+  <!-- Game Instructions -->
+  <div class="instructions" *ngIf="!gameStarted">
+    <div class="instruction-card">
+      <h2>🎯 How to Play</h2>
+      <p>Match words that go together! Find the connections between related words.</p>
+      <button class="start-button" (click)="startGame()">
+        <ion-icon name="play"></ion-icon>
+        Start Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Board -->
+  <div class="game-board" *ngIf="gameStarted && !gameCompleted">
+    <!-- Current Question -->
+    <div class="question-section">
+      <div class="question-card">
+        <h3>What goes with:</h3>
+        <div class="main-word">{{currentQuestion.word}}</div>
+        <div class="word-emoji">{{currentQuestion.emoji}}</div>
+      </div>
+    </div>
+
+    <!-- Answer Options -->
+    <div class="options-grid">
+      <div 
+        *ngFor="let option of currentOptions; let i = index"
+        class="option-card"
+        [class.selected]="selectedAnswer === option"
+        [class.correct]="showResult && option === currentQuestion.answer"
+        [class.wrong]="showResult && selectedAnswer === option && option !== currentQuestion.answer"
+        [class.disabled]="showResult"
+        (click)="selectAnswer(option)">
+        <span class="option-text">{{option}}</span>
+      </div>
+    </div>
+
+    <!-- Result Feedback -->
+    <div class="result-section" *ngIf="showResult">
+      <div class="result-card" [class.correct]="isCorrect" [class.wrong]="!isCorrect">
+        <div class="result-icon">{{isCorrect ? '🎉' : '💭'}}</div>
+        <h4>{{isCorrect ? 'Excellent!' : 'Good try!'}}</h4>
+        <p *ngIf="isCorrect">{{currentQuestion.word}} and {{currentQuestion.answer}} go together!</p>
+        <p *ngIf="!isCorrect">{{currentQuestion.word}} goes with {{currentQuestion.answer}}.</p>
+        <button class="continue-button" (click)="nextQuestion()">
+          <ion-icon name="arrow-forward"></ion-icon>
+          {{currentQuestionNumber >= totalQuestions ? 'Finish' : 'Continue'}}
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="(currentQuestionNumber / totalQuestions) * 100"></div>
+      </div>
+      <div class="progress-text">
+        Question {{currentQuestionNumber}} of {{totalQuestions}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Completed -->
+  <div class="game-completed" *ngIf="gameCompleted">
+    <div class="completion-card">
+      <div class="celebration">🌟</div>
+      <h2>Wonderful!</h2>
+      <p>You completed all the word associations!</p>
+      
+      <div class="final-stats">
+        <div class="stat">
+          <span class="number">{{correctAnswers}}/{{totalQuestions}}</span>
+          <span class="label">Correct</span>
+        </div>
+        <div class="stat">
+          <span class="number">{{score}}</span>
+          <span class="label">Score</span>
+        </div>
+        <div class="stat">
+          <span class="number">{{Math.round((correctAnswers/totalQuestions)*100)}}%</span>
+          <span class="label">Accuracy</span>
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="play-again-button" (click)="resetGame()">
+          <ion-icon name="refresh"></ion-icon>
+          Play Again
+        </button>
+        <button class="home-button" (click)="goHome()">
+          <ion-icon name="home"></ion-icon>
+          Home
+        </button>
+      </div>
+    </div>
+  </div>
+</ion-content>

@@ -1,0 +1,102 @@
+<ion-header>
+  <ion-toolbar color="transparent">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home" fill="clear">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title color="light" class="header-title">🃏 Memory Matching</ion-title>
+    <ion-buttons slot="end">
+      <div class="score-display">
+        <span class="score-number">{{score}}</span>
+        <span class="score-label">Score</span>
+      </div>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="matching-game-screen" fullscreen>
+  <div class="header-spacer"></div>
+  
+  <!-- Game Instructions -->
+  <div class="instructions" *ngIf="!gameStarted">
+    <div class="instruction-card">
+      <h2>🎯 How to Play</h2>
+      <p>Tap cards to flip them and find matching pairs!</p>
+      <button class="start-button" (click)="startGame()">
+        <ion-icon name="play"></ion-icon>
+        Start Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Board -->
+  <div class="game-board" *ngIf="gameStarted && !gameCompleted">
+    <div class="cards-grid">
+      <div 
+        *ngFor="let card of cards; let i = index" 
+        class="card-container"
+        (click)="flipCard(i)"
+        [class.flipped]="card.isFlipped"
+        [class.matched]="card.isMatched"
+        [class.disabled]="flippedCards.length >= 2 && !card.isFlipped">
+        
+        <div class="card">
+          <div class="card-front">
+            <div class="card-pattern">?</div>
+          </div>
+          <div class="card-back">
+            <div class="card-emoji">{{card.emoji}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="game-stats">
+      <div class="stat-item">
+        <span class="stat-number">{{moves}}</span>
+        <span class="stat-label">Moves</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{matchedPairs}}/{{totalPairs}}</span>
+        <span class="stat-label">Pairs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Completed -->
+  <div class="game-completed" *ngIf="gameCompleted">
+    <div class="completion-card">
+      <div class="celebration">🎉</div>
+      <h2>Wonderful!</h2>
+      <p>You found all {{totalPairs}} pairs!</p>
+      <div class="final-stats">
+        <div class="final-stat">
+          <span class="number">{{moves}}</span>
+          <span class="label">Total Moves</span>
+        </div>
+        <div class="final-stat">
+          <span class="number">{{score}}</span>
+          <span class="label">Final Score</span>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="play-again-button" (click)="resetGame()">
+          <ion-icon name="refresh"></ion-icon>
+          Play Again
+        </button>
+        <button class="home-button" (click)="goHome()">
+          <ion-icon name="home"></ion-icon>
+          Home
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating particles -->
+  <div class="floating-particles">
+    <div class="particle particle-1">✨</div>
+    <div class="particle particle-2">⭐</div>
+    <div class="particle particle-3">🌟</div>
+  </div>
+</ion-content>

@@ -1,0 +1,151 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <!-- Back button (left) -->
+    <ion-buttons slot="start">
+      <ion-button class="icon-btn back-btn" fill="clear" routerLink="/home">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!-- Title (center) -->
+    <ion-title class="app-title">Video Memories</ion-title>
+
+    <!-- Add button (right, hidden in Patient Mode) -->
+    <ion-buttons slot="end">
+      <ion-button
+        class="icon-btn add-btn"
+        fill="clear"
+        *ngIf="!isPatientMode"
+        (click)="openAddMenu()"
+      >
+        <ion-icon name="add-circle-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="game-home-screen" [fullscreen]="true" id="video-memories-page">
+  <!-- Floating decor -->
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🎬</div>
+    <div class="floating-emoji emoji-2">💭</div>
+    <div class="floating-emoji emoji-3">✨</div>
+    <div class="floating-emoji emoji-4">🎞️</div>
+  </div>
+  <div class="floating-circles">
+    <div class="floating-circle circle-1"></div>
+    <div class="floating-circle circle-2"></div>
+    <div class="floating-circle circle-3"></div>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="videos.length === 0" class="empty-state-wrapper">
+    <div class="empty-state">
+      <ion-icon class="empty-icon" name="videocam-outline"></ion-icon>
+      <h2>No Videos yet</h2>
+      <div class="empty-message">Tap the + to add a memory.</div>
+    </div>
+  </div>
+
+  <!-- Reels (infinite / circular) -->
+  <div class="reels-container" *ngIf="videos.length > 0" #reels (scroll)="onReelsScroll()">
+    <div class="reel" *ngFor="let v of displayVideos; index as i" [attr.data-index]="i">
+
+      <!-- Delete “×” (hidden in Patient Mode) -->
+      <button class="delete-chip" *ngIf="!isPatientMode" (click)="deleteVideo(i)" aria-label="Delete video">×</button>
+
+      <!-- Video -->
+      <video
+        #vidRef
+        class="reel-video"
+        [src]="v.src"
+        [poster]="v.poster || ''"
+        preload="metadata"
+        muted
+        playsinline
+        loop
+        (loadedmetadata)="onLoadedMeta(i)"
+        (timeupdate)="onTimeUpdate(i)"
+        (click)="onVideoTap(i)">
+      </video>
+
+      <!-- Overlay -->
+      <div class="reel-overlay">
+        <div class="reel-meta">
+          <!-- Title row: view vs edit -->
+          <div class="reel-title-row">
+            <!-- VIEW MODE -->
+            <ng-container *ngIf="editingIndex !== realIndex(i); else editField">
+              <div class="reel-title"
+                   [class.expanded]="isTitleExpanded(i)"
+                   (click)="onTitleTap(i)"
+                   title="Tap to {{ isTitleExpanded(i) ? 'collapse' : 'expand' }}">
+                   {{ (videos[realIndex(i)]?.label || 'Video memory') }}
+              </div>
+              <ion-button *ngIf="!isPatientMode" class="edit-title-btn" fill="clear" size="small" (click)="startEdit(i)" aria-label="Edit title">
+                <ion-icon name="create-outline"></ion-icon>
+              </ion-button>
+            </ng-container>
+
+            <!-- EDIT MODE -->
+            <ng-template #editField>
+              <ion-input
+                class="title-input"
+                [value]="editLabel"
+                [autofocus]="true"
+                (ionInput)="onEditLabelInput($event)"
+                (keydown.enter)="saveEdit(realIndex(i))"
+                (keydown.escape)="cancelEdit()"
+                (ionBlur)="onInputBlur(realIndex(i))">
+              </ion-input>
+              <ion-button fill="clear" size="small" (click)="saveEdit(realIndex(i))" aria-label="Save title">
+                <ion-icon name="checkmark-outline"></ion-icon>
+              </ion-button>
+              <ion-button fill="clear" size="small" (mousedown)="onCancelMouseDown()" (click)="cancelEdit()" aria-label="Cancel edit">
+                <ion-icon name="close-outline"></ion-icon>
+              </ion-button>
+            </ng-template>
+          </div>
+
+          <div class="reel-time">{{ videos[realIndex(i)]?.createdAt | date:'mediumDate' }}</div>
+        </div>
+      </div>
+
+      <!-- Bottom controls -->
+      <div class="reel-controls">
+        <ion-button fill="clear" class="play-toggle" (click)="onVideoTap(i)" aria-label="Play/Pause">
+          <ion-icon [name]="isPlaying(i) ? 'pause' : 'play'"></ion-icon>
+        </ion-button>
+
+        <ion-range
+          class="reel-range"
+          [value]="progress[realIndex(i)]?.current ?? 0"
+          [max]="progress[realIndex(i)]?.duration ?? 0"
+          (ionChange)="onSeek($event, i)"
+          [disabled]="!(progress[realIndex(i)] && progress[realIndex(i)].duration > 0)">
+        </ion-range>
+
+        <div class="time-readout">
+          {{ formatTime(progress[realIndex(i)]?.current || 0) }} /
+          {{ formatTime(progress[realIndex(i)]?.duration || 0) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden inputs for camera / gallery -->
+  <input
+    type="file"
+    accept="video/*"
+    capture="environment"
+    class="hidden-file"
+    #cameraInput
+    (change)="onFilePicked($event, 'camera')" />
+
+  <input
+    type="file"
+    accept="video/*"
+    class="hidden-file"
+    #galleryInput
+    (change)="onFilePicked($event, 'gallery')" />
+</ion-content>

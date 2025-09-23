@@ -1,0 +1,65 @@
+<ion-header>
+  <ion-toolbar color="transparent">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home" fill="clear" color="light">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title color="light" class="header-title">Mini Games</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="mini-games-screen" fullscreen>
+  <div class="header-spacer"></div>
+  
+  <div class="section-label">🎮 Choose your brain exercise</div>
+  
+  <div class="games-grid">
+    <!-- Memory Matching Game -->
+    <div class="game-card matching-game" routerLink="/memory-matching">
+      <div class="card-glow"></div>
+      <div class="game-icon">🃏</div>
+      <h3>Memory Matching</h3>
+      <p>Match pairs of cards</p>
+      <div class="difficulty-badge easy">Easy</div>
+      <button class="play-button">
+        <ion-icon name="play"></ion-icon>
+        Play Now
+      </button>
+    </div>
+
+    <!-- Color Sequence Game -->
+    <div class="game-card sequence-game" routerLink="/color-sequence">
+      <div class="card-glow"></div>
+      <div class="game-icon">🌈</div>
+      <h3>Color Sequence</h3>
+      <p>Remember the pattern</p>
+      <div class="difficulty-badge medium">Medium</div>
+      <button class="play-button">
+        <ion-icon name="play"></ion-icon>
+        Play Now
+      </button>
+    </div>
+
+    <!-- Word Association Game -->
+    <div class="game-card word-game" routerLink="/word-association">
+      <div class="card-glow"></div>
+      <div class="game-icon">💭</div>
+      <h3>Word Association</h3>
+      <p>Connect related words</p>
+      <div class="difficulty-badge easy">Easy</div>
+      <button class="play-button">
+        <ion-icon name="play"></ion-icon>
+        Play Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating decorative elements -->
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🎯</div>
+    <div class="floating-emoji emoji-2">🧩</div>
+    <div class="floating-emoji emoji-3">⭐</div>
+    <div class="floating-emoji emoji-4">🎈</div>
+  </div>
+</ion-content>

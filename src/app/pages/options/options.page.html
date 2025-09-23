@@ -1,0 +1,56 @@
+<ion-header>
+  <ion-toolbar color="transparent">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home" fill="clear" color="light">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title color="light" class="header-title">Memory Games</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="home-screen" fullscreen>
+  <div class="header-spacer"></div>
+  
+  <div class="section-label">🎯 Choose your adventure</div>
+  
+  <div class="game-categories">
+    <div class="category-card people" (click)="selectCategory('people')">
+      <div class="category-icon">👨‍👩‍👧‍👦</div>
+      <h3>People</h3>
+      <p>Family & Friends</p>
+      <button class="play-button">
+        Play Now
+        <ion-icon name="play"></ion-icon>
+      </button>
+    </div>
+    
+    <div class="category-card places" (click)="selectCategory('places')">
+      <div class="category-icon">🏡</div>
+      <h3>Places</h3>
+      <p>Special Locations</p>
+      <button class="play-button">
+        Play Now
+        <ion-icon name="play"></ion-icon>
+      </button>
+    </div>
+    
+    <div class="category-card objects" (click)="selectCategory('objects')">
+      <div class="category-icon">🧸</div>
+      <h3>Objects</h3>
+      <p>Favorite Things</p>
+      <button class="play-button">
+        Play Now
+        <ion-icon name="play"></ion-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating decorative elements -->
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🌟</div>
+    <div class="floating-emoji emoji-2">💫</div>
+    <div class="floating-emoji emoji-3">✨</div>
+    <div class="floating-emoji emoji-4">🎈</div>
+  </div>
+</ion-content>

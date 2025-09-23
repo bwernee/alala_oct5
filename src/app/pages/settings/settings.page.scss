@@ -1,0 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap');
+
+.settings-screen {
+  --ion-background-color: transparent;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  font-family: 'Nunito', sans-serif;
+  position: relative;
+  min-height: 100%;
+}
+
+.app-header ion-toolbar {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: #fff;
+  --min-height: 64px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  padding: 0 8px;
+}
+.app-title { font-weight: 900; font-size: 20px; letter-spacing: .5px; }
+
+.settings-container {
+  padding: 16px;
+  padding-bottom: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+.glass-card {
+  background: rgba(255,255,255,.95);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.35);
+  backdrop-filter: blur(10px);
+}
+
+.profile-card .profile-header { display: flex; align-items: center; gap: 12px; }
+.profile-card .profile-icon { font-size: 64px; color: #667eea; }
+.profile-card .profile-info h2 { margin: 0; color: #1f2937; font-weight: 800; }
+.profile-card .profile-info p { margin: 2px 0 0; color: #6b7280; }
+
+.card-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.card-head .title-wrap { display: flex; align-items: center; gap: 8px; }
+.card-head .title-wrap ion-icon { font-size: 22px; color: #667eea; }
+.card-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: #1f2937; }
+
+.pin-card .pin-status {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  .label { color: #6b7280; font-weight: 700; }
+  .dots { font-weight: 800; letter-spacing: 3px; color: #111827; }
+}
+
+.pin-card ion-item {
+  --background: transparent;
+  --border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.pin-card .actions {
+  display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px;
+}
+
+.qr-display {
+  margin-top: 14px; text-align: center;
+  .qr-container {
+    padding: 16px; border: 2px solid rgba(102,126,234,.25);
+    border-radius: 12px; background: white;
+  }
+  .qr-image { width: 100%; max-width: 260px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .qr-description { color: #111827; margin: 10px 0 6px; font-weight: 700; }
+  .qr-data { color: #6b7280; font-size: 12px; word-break: break-all; display: block; margin-top: 6px; padding: 8px; background: #f3f4f6; border-radius: 6px; }
+  .qr-placeholder {
+    padding: 30px; border: 2px dashed #9ca3af; border-radius: 12px; background: #f3f4f6;
+    ion-icon { font-size: 64px; color: #9ca3af; margin-bottom: 8px; }
+    p { color: #6b7280; margin: 8px 0; }
+  }
+}
+
+/* Trusted Contacts Styles */
+.trusted-contact-options {
+  .divider-text {
+    text-align: center;
+    margin: 16px 0;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(0,0,0,0.1);
+    }
+
+    span {
+      background: rgba(255,255,255,0.95);
+      padding: 0 16px;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 600;
+    }
+  }
+}
+
+.trusted-contacts-list {
+  margin-top: 20px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: #1f2937;
+  }
+
+  ion-list {
+    background: transparent;
+
+    ion-item {
+      --background: rgba(255,255,255,0.6);
+      --border-radius: 12px;
+      margin-bottom: 8px;
+      border-radius: 12px;
+
+      ion-label {
+        h3 {
+          font-weight: 700;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        p {
+          color: #6b7280;
+          margin: 2px 0 0 0;
+          font-size: 14px;
+        }
+
+        .contact-added {
+          font-size: 12px;
+          color: #9ca3af;
+        }
+      }
+
+      ion-avatar {
+        width: 40px;
+        height: 40px;
+
+        img {
+          border-radius: 50%;
+        }
+
+        .family-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+
+          ion-icon {
+            font-size: 20px;
+          }
+        }
+      }
+
+      .family-name {
+        font-weight: 800 !important;
+        color: #1f2937 !important;
+        font-size: 16px !important;
+        letter-spacing: 0.5px;
+      }
+
+      .family-code {
+        color: #667eea !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        margin: 4px 0 2px 0 !important;
+      }
+    }
+  }
+}
+
+/* Floating decor to match Home */
+.floating-elements,
+.floating-circles { opacity: .15; position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+
+.floating-emoji { position: absolute; font-size: 24px; animation: floatAround 8s ease-in-out infinite; opacity: .7; }
+.emoji-1 { top: 10%; left: 10%; animation-delay: 0s; }
+.emoji-2 { top: 20%; right: 15%; animation-delay: 2s; }
+.emoji-3 { top: 60%; left: 5%;  animation-delay: 4s; }
+.emoji-4 { top: 70%; right: 10%; animation-delay: 6s; }
+
+.floating-circle { position: absolute; border-radius: 50%; background: rgba(255,255,255,.08); animation: floatCircle 12s ease-in-out infinite; }
+.circle-1 { width: 120px; height: 120px; top: 15%; left: 8%;  animation-delay: 0s; }
+.circle-2 { width: 80px;  height: 80px;  top: 25%; right: 12%; animation-delay: 3s; }
+.circle-3 { width: 150px; height: 150px; top: 55%; left: 15%; animation-delay: 6s; }
+
+/* Animations */
+@keyframes floatAround { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-2px, -12px) rotate(90deg)} 50%{transform:translate(-6px,-4px) rotate(180deg)} 75%{transform:translate(-2px,-16px) rotate(270deg)} }
+@keyframes floatCircle { 0%,100%{transform:translateY(0) translateX(0) scale(1); opacity:.08}
+  25%{transform:translateY(-20px) translateX(15px) scale(1.1); opacity:.12}
+  50%{transform:translateY(-10px) translateX(-10px) scale(.9); opacity:.06}
+  75%{transform:translateY(-30px) translateX(8px) scale(1.05); opacity:.1}
+}
+
+@media (max-width: 480px) {
+  .settings-container { padding: 12px; }
+  .glass-card { padding: 14px; }
+}
+
+/* Match the home page avatar border style (gradient ring + white inner edge) */
+.settings-container .profile-card .profile-icon {
+  /* size & shape */
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  cursor: pointer;
+
+  /* gradient "outer ring" like home */
+  --ring: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background: var(--ring);
+  padding: 3px; /* ring thickness */
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25); /* subtle depth */
+}
+
+/* white inner edge + perfect circle image */
+.settings-container .profile-card .profile-icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
+  background: #fff;       /* white inner edge under the photo */
+  object-fit: cover;
+}
+
+.avatar-ring {
+  box-sizing: border-box;
+  border: 3px solid transparent;    /* gradient ring thickness */
+  padding: 3px;                      /* white inner edge */
+  --ring: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    var(--ring) border-box;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+.avatar-ring img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 50%;
+}

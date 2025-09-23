@@ -1,0 +1,288 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap');
+
+/* ===== Header ===== */
+.app-header ion-toolbar {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: #fff;
+  --min-height: 64px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  padding: 0 8px;
+}
+.app-title { font-weight: 900; font-size: 20px; letter-spacing: .5px; }
+.icon-btn { --background: transparent; color: #fff; margin-left: 4px; }
+.icon-btn ion-icon { font-size: 22px; }
+
+/* ===== Background ===== */
+.game-home-screen {
+  --ion-background-color: transparent;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  font-family: 'Nunito', sans-serif;
+  min-height: 100%;
+  overflow: hidden;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+    z-index: -2; pointer-events: none;
+  }
+  &::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+    z-index: -1; pointer-events: none;
+  }
+}
+.floating-elements, .floating-circles { opacity: .12; }
+.floating-elements {
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  .floating-emoji { position: absolute; font-size: 22px; animation: floatAround 8s ease-in-out infinite; opacity: .8; }
+  .emoji-1 { top: 10%; left: 10%; animation-delay: 0s; }
+  .emoji-2 { top: 22%; right: 12%; animation-delay: 2s; }
+  .emoji-3 { top: 66%; left: 6%;  animation-delay: 4s; }
+  .emoji-4 { top: 78%; right: 8%;  animation-delay: 6s; }
+}
+.floating-circles {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  .floating-circle { position: absolute; border-radius: 50%; background: rgba(255,255,255,.08); animation: floatCircle 12s ease-in-out infinite; }
+  .circle-1 { width: 120px; height: 120px; top: 15%; left: 8%;  animation-delay: 0s; }
+  .circle-2 { width: 80px;  height: 80px;  top: 25%; right: 12%; animation-delay: 3s; }
+  .circle-3 { width: 150px; height: 150px; top: 55%; left: 15%; animation-delay: 6s; }
+}
+
+/* ===== Empty state ===== */
+.empty-state-wrapper {
+  display: flex; align-items: center; justify-content: center;
+  height: calc(100vh - 64px); padding: 16px;
+}
+.empty-state {
+  background: rgba(255,255,255,.96);
+  border-radius: 20px; padding: 40px; text-align: center;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.empty-icon { font-size: 72px; margin-bottom: 12px; color: #764ba2; }
+.empty-state h2 { margin: 0 0 10px; color: #1f2937; font-weight: 900; }
+.empty-message { margin: 6px 0 18px; color: #4b5563; }
+
+/* ===== Reels (vertical) ===== */
+.reels-container {
+  position: relative;
+  height: calc(100vh - 64px);
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reel {
+  position: relative;
+  height: calc(100vh - 64px);
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.reel-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  cursor: pointer;
+}
+
+/* ===== Delete “×” overlay ===== */
+.delete-chip {
+  position: absolute;
+  top: 8px; right: 10px;
+  width: 36px; height: 36px;
+  border: none; border-radius: 999px;
+  background: rgba(0,0,0,0.6);
+  color: #fff; font-size: 22px; line-height: 36px; text-align: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.delete-chip:active { transform: scale(0.96); }
+
+/* ===== Overlay for title/time ===== */
+.reel-overlay {
+  position: absolute; left: 0; right: 0; bottom: 64px; /* keep space for slider */
+  padding: 18px 14px 26px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.35) 85%);
+  pointer-events: none; /* allow clicks to pass through */
+}
+.reel-meta {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.6);
+  pointer-events: auto; /* inner items clickable */
+}
+
+/* ===== Title row (icon flush with title) ===== */
+.reel-title-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 0;                 /* absolutely no space between title and icon */
+  letter-spacing: 0;
+}
+
+/* Title: truncates to 1 line by default; expands vertically on tap */
+.reel-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 900;
+  font-size: 18px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;      /* 1 line by default */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;         /* allow wrapping when expanded */
+  line-height: 1.25;
+  max-height: 1.25em;          /* 1 line tall */
+  transition: max-height 180ms ease;
+  cursor: pointer;
+}
+.reel-title.expanded {
+  -webkit-line-clamp: unset;
+  max-height: calc(1.25em * 6); /* show up to 6 lines */
+}
+@media (prefers-reduced-motion: reduce) {
+  .reel-title { transition: none; }
+}
+
+/* Edit button: zero spacing, sits flush with title */
+.edit-title-btn {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  margin: 0;
+  height: auto;
+  min-height: 0;
+  line-height: 1;
+  color: #fff;
+}
+.edit-title-btn ion-icon {
+  font-size: 18px;
+  vertical-align: baseline;
+}
+
+.reel-time  { font-weight: 700; font-size: 12px; opacity: .9; }
+
+/* Make sure overlays can grow if needed */
+.reel-overlay, .reel-meta { overflow: visible; }
+
+/* ===== Bottom controls ===== */
+.reel-controls {
+  position: absolute; left: 0; right: 0; bottom: 12px;
+  padding: 0 12px;
+  display: grid;
+  grid-template-columns: auto 1fr auto; /* button | slider | time */
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+.play-toggle {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --background: rgba(0,0,0,0.35);
+  --border-radius: 999px;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+}
+.play-toggle ion-icon { font-size: 18px; }
+
+.reel-range {
+  --bar-background: rgba(255,255,255,0.35);
+  --bar-background-active: linear-gradient(90deg, #a855f7, #7c3aed);
+  --knob-background: #ffffff;
+  --knob-size: 18px;
+  --bar-height: 6px;
+  --bar-border-radius: 999px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+  margin-inline: 4px;
+}
+
+.time-readout {
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.6);
+  min-width: 86px;
+  text-align: right;
+}
+
+/* Hidden inputs */
+.hidden-file { display: none; }
+
+/* ===== Animations ===== */
+@keyframes float { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(180deg)} }
+@keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+@keyframes floatAround { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-2px,-12px) rotate(90deg)} 50%{transform:translate(-6px,-4px) rotate(180deg)} 75%{transform:translate(-2px,-16px) rotate(270deg)} }
+@keyframes floatCircle {
+  0%,100%{transform:translateY(0) translateX(0) scale(1); opacity:.08}
+  25%{transform:translateY(-20px) translateX(15px) scale(1.1); opacity:.12}
+  50%{transform:translateY(-10px) translateX(-10px) scale(.9); opacity:.06}
+  75%{transform:translateY(-30px) translateX(8px) scale(1.05); opacity:.1}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-elements *, .floating-circles * { animation: none !important; }
+  .game-home-screen::before, .game-home-screen::after { animation: none !important; }
+}
+
+/* ===== Force BACK + SETTINGS icons white ===== */
+
+/* Built-in back button */
+ion-back-button,
+ion-back-button::part(icon) {
+  --color: #fff !important;
+  color: #fff !important;
+  fill: #fff !important;
+  stroke: #fff !important;
+}
+
+/* Custom back button with .icon-btn */
+.icon-btn.back-btn,
+.icon-btn.back-btn ion-icon {
+  --color: #fff !important;
+  color: #fff !important;
+  fill: #fff !important;
+  stroke: #fff !important;
+}
+
+/* Settings button */
+.icon-btn.settings-btn,
+.icon-btn.settings-btn ion-icon {
+  --color: #fff !important;
+  color: #fff !important;
+  fill: #fff !important;
+  stroke: #fff !important;
+}
+
+/* Keep them white when hovered/pressed */
+ion-back-button:hover,
+ion-back-button:active,
+.icon-btn.back-btn:hover ion-icon,
+.icon-btn.back-btn:active ion-icon,
+.icon-btn.settings-btn:hover ion-icon,
+.icon-btn.settings-btn:active ion-icon {
+  color: #fff !important;
+  fill: #fff !important;
+  stroke: #fff !important;
+}

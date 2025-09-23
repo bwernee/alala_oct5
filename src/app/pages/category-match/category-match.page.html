@@ -1,0 +1,127 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <ion-title class="app-title">Category Match</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="game-home-screen" [fullscreen]="true">
+
+  <!-- Floating Background Elements (same as Home) -->
+  <div class="floating-circles">
+    <div class="floating-circle circle-1"></div>
+    <div class="floating-circle circle-2"></div>
+    <div class="floating-circle circle-3"></div>
+  </div>
+
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🧠</div>
+    <div class="floating-emoji emoji-2">💭</div>
+    <div class="floating-emoji emoji-3">❤️</div>
+    <div class="floating-emoji emoji-4">🌟</div>
+  </div>
+
+  <!-- Progress (silent) -->
+  <div class="progress-container" *ngIf="totalQuestions > 0">
+    <div class="progress-bar" role="progressbar" [attr.aria-valuenow]="progressPct" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-fill" [style.width.%]="progressPct"></div>
+    </div>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="gameCards.length === 0" class="empty-state-wrapper">
+    <div class="empty-state">
+      <div class="empty-icon">🧠</div>
+      <h2>No Cards Yet</h2>
+      <p class="empty-message">Add People, Places, or Objects to start.</p>
+      <ion-button color="primary" routerLink="/home" expand="block" class="glow-button">
+        <ion-icon name="add" slot="start"></ion-icon>
+        Add Cards
+      </ion-button>
+    </div>
+  </div>
+
+  <!-- Game -->
+  <div *ngIf="gameCards.length > 0" class="game-container">
+
+    <!-- Gentle instruction -->
+    <div class="focus-banner" aria-hidden="true">
+      Choose the correct category
+    </div>
+
+    <!-- Current Card -->
+    <div class="question-card-wrapper" *ngIf="currentCard">
+      <div class="question-card">
+        <div class="image-container">
+          <div class="image-frame">
+            <img [src]="imgSrc(currentCard)" [alt]="currentCard.label || 'Flashcard image'" />
+          </div>
+        </div>
+        <div class="question-text">
+          <h2 class="prompt-text">Which category is this?</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Options + Skip -->
+    <div class="options-container" *ngIf="!showResult && currentCard && !showGameComplete">
+      <div class="options-grid">
+        <button
+          *ngFor="let cat of options; let i = index"
+          type="button"
+          class="option-button"
+          (click)="selectAnswer(cat)"
+          [attr.aria-label]="'Answer: ' + cat">
+          <span class="option-text">{{ cat }}</span>
+          <ion-icon class="option-caret" aria-hidden="true"></ion-icon>
+        </button>
+
+        <button
+          type="button"
+          class="option-button skip-card"
+          (click)="skipCurrent()"
+          aria-label="Skip this card">
+          <div class="skip-content">
+            <ion-icon name="play-skip-forward-outline" class="skip-icon" aria-hidden="true"></ion-icon>
+            <span class="skip-text">Skip Card</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+<!-- Result per-question (white, fixed size, purple border) -->
+<div *ngIf="showResult" class="result-overlay" role="dialog" aria-modal="true">
+  <div class="result-modal result-modal--light">
+    <div class="result-icon" [class.correct]="isCorrect">
+      <span *ngIf="isCorrect">✅</span>
+      <span *ngIf="!isCorrect">💙</span>
+    </div>
+
+    <h2 *ngIf="isCorrect" class="result-title">Nice!</h2>
+    <h2 *ngIf="!isCorrect" class="result-title">Good try!</h2>
+
+    <p *ngIf="!isCorrect" class="correct-answer">
+      Category: <strong>{{ currentCard ? (currentCard.category | titlecase) : '' }}</strong>
+    </p>
+
+    <ion-button expand="block" class="btn-grad-purple" (click)="continueGame()">
+      Continue
+    </ion-button>
+  </div>
+</div>
+
+<!-- Game Complete (white, fixed size, gradient buttons) -->
+<div *ngIf="showGameComplete" class="result-overlay" role="dialog" aria-modal="true">
+  <div class="result-modal result-modal--light">
+    <div class="result-medallion result-medallion--light">
+      <ion-icon name="sparkles-outline" aria-hidden="true"></ion-icon>
+    </div>
+    <h2 class="result-title">Great work!</h2>
+    <p class="encouragement">Would you like to try another round?</p>
+    <div class="game-actions">
+      <ion-button expand="block" class="btn-grad-purple" (click)="playAgain()">Play again</ion-button>
+      <ion-button expand="block" class="btn-grad-pink" (click)="finishGame()">Exit</ion-button>
+    </div>
+  </div>
+</div>

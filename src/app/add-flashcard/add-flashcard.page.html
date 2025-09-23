@@ -1,0 +1,218 @@
+<ion-header>
+  <ion-toolbar class="senior-header">
+    <ion-buttons slot="start">
+      <ion-button (click)="closeModal()" fill="clear" aria-label="Back">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title class="header-title">Add Flashcard</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="add-flashcard-page" [scrollY]="true">
+  <div class="form-wrapper">
+
+    <!-- Fixed/Sticky target-picker (Built-in vs Your Categories) -->
+<div class="target-picker" role="tablist" aria-label="Save target">
+  <button
+    class="target-tab"
+    [class.active]="activeTarget === 'builtin'"
+    (click)="selectTarget('builtin')"
+    role="tab"
+    [attr.aria-selected]="activeTarget === 'builtin' ? 'true' : 'false'">
+    <ion-icon name="albums-outline"></ion-icon>
+    <span>Built-in</span>
+  </button>
+
+  <button
+    class="target-tab"
+    [class.active]="activeTarget === 'custom'"
+    (click)="selectTarget('custom')"
+    role="tab"
+    [attr.aria-selected]="activeTarget === 'custom' ? 'true' : 'false'">
+    <ion-icon name="folder-open-outline"></ion-icon>
+    <span>Your Categories</span>
+  </button>
+</div>
+
+
+    <!-- Built-in categories (People / Objects / Places) -->
+    <div class="section" *ngIf="activeTarget === 'builtin'">
+      <div class="section-title">Built-in Category</div>
+      <ion-segment [(ngModel)]="category" mode="ios" class="big-segment" (ionChange)="clearCustomSelection()">
+        <ion-segment-button value="people">
+          <ion-icon name="people-circle-outline"></ion-icon>
+          <ion-label>People</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="objects">
+          <ion-icon name="cube-outline"></ion-icon>
+          <ion-label>Objects</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="places">
+          <ion-icon name="location-outline"></ion-icon>
+          <ion-label>Places</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </div>
+
+    <!-- Custom categories strip (sticky style, fixed position within page) -->
+    <div class="section" *ngIf="activeTarget === 'custom'">
+      <div class="section-title">Your Categories</div>
+
+      <div class="custom-strip" [class.empty]="customCategories.length === 0">
+        <ng-container *ngIf="customCategories.length > 0; else noCustom">
+          <button
+            class="cat-chip"
+            *ngFor="let c of customCategories"
+            [class.selected]="selectedCustomCategoryId === c.id"
+            (click)="selectCustomCategory(c.id)"
+            title="{{ c.name }}">
+            <span class="chip-emoji">{{ c.emoji || '🗂️' }}</span>
+            <span class="chip-name">{{ c.name }}</span>
+          </button>
+        </ng-container>
+        <ng-template #noCustom>
+          <div class="no-custom-hint">
+            No custom categories yet. Create one on the Home page, then come back here to save into it.
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Name -->
+    <ion-item>
+      <ion-label position="floating">Name</ion-label>
+      <ion-input [(ngModel)]="name" required></ion-input>
+    </ion-item>
+
+    <!-- Photo -->
+    <div class="section">
+      <div class="section-title">Photo</div>
+
+      <div class="image-frame">
+        <ng-container *ngIf="image; else placeholder">
+          <img [src]="image" alt="Preview" />
+        </ng-container>
+        <ng-template #placeholder>
+          <div class="image-placeholder">
+            <ion-icon name="image-outline"></ion-icon>
+            <span>No photo yet</span>
+          </div>
+        </ng-template>
+      </div>
+
+      <ion-grid class="btn-row">
+        <ion-row>
+          <ion-col size="6">
+            <ion-button expand="block" color="primary" (click)="takePhoto()">
+              <ion-icon slot="start" name="camera"></ion-icon>
+              Take Photo
+            </ion-button>
+          </ion-col>
+          <ion-col size="6">
+            <ion-button expand="block" color="tertiary" (click)="selectImage()">
+              <ion-icon slot="start" name="image"></ion-icon>
+              Choose Photo
+            </ion-button>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </div>
+
+    <!-- Voice (optional) -->
+    <div class="section">
+      <div class="section-title">Voice (optional)</div>
+
+      <div class="record-area">
+        <button
+          class="record-btn"
+          [class.recording]="isRecording"
+          (click)="recordAudio()"
+          aria-label="Record or Stop">
+          <ion-icon [name]="isRecording ? 'stop' : 'mic'"></ion-icon>
+          <div class="record-label">{{ isRecording ? 'Stop' : 'Record' }}</div>
+        </button>
+
+        <div class="record-timer" *ngIf="isRecording">
+          <span class="dot"></span>
+          <span class="time">{{ recordingTime }}</span>
+        </div>
+      </div>
+
+      <ion-grid class="btn-row" *ngIf="!isRecording">
+        <ion-row>
+          <ion-col size="12">
+            <ion-button expand="block" color="dark" (click)="selectAudio()">
+              <ion-icon slot="start" name="musical-notes"></ion-icon>
+              Upload Audio (MP3 / M4A)
+            </ion-button>
+            <div class="audio-hint">Supports MP3 and M4A voice clips.</div>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+
+      <div *ngIf="audio && !isRecording" class="audio-player">
+        <div class="player-header">
+          <ion-icon name="headset" color="primary"></ion-icon>
+          <span>Preview</span>
+
+          <div class="header-actions">
+            <ion-button size="small" color="warning" (click)="startNewRecording()">
+              <ion-icon name="refresh" slot="start"></ion-icon>
+              Re-record
+            </ion-button>
+            <ion-button size="small" color="danger" (click)="removeAudio()">
+              <ion-icon name="trash" slot="start"></ion-icon>
+              Delete
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="player-controls">
+          <ion-button shape="round" size="large" fill="solid" color="light" (click)="togglePlayback()">
+            <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+          </ion-button>
+
+          <div class="progress-container">
+            <ion-range
+              min="0"
+              [max]="audioDuration"
+              [value]="currentTime"
+              (ionChange)="seekAudio($event)"
+              step="0.01"
+              color="primary">
+            </ion-range>
+            <div class="time-display">
+              <span>{{ formatTime(currentTime) }}</span>
+              <span>{{ formatTime(audioDuration) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <audio
+          #audioPlayer
+          [src]="audio"
+          preload="metadata"
+          (loadedmetadata)="onAudioLoaded()"
+          (timeupdate)="onTimeUpdate()"
+          (ended)="onAudioEnded()"
+          (pause)="onAudioPause()"
+          (play)="onAudioPlay()"
+          style="display: none;">
+        </audio>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <ion-button
+      expand="block"
+      color="success"
+      class="save-button"
+      (click)="saveFlashcard()"
+      [disabled]="isSaving || !name || !image || (activeTarget==='custom' && !selectedCustomCategoryId)">
+      <ion-icon slot="start" name="save"></ion-icon>
+      {{ isSaving ? 'Saving…' : 'Save Flashcard' }}
+    </ion-button>
+
+  </div>
+</ion-content>

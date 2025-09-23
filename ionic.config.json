@@ -1,0 +1,7 @@
+{
+  "name": "alala",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap');
+
+.home-screen {
+  --ion-background-color: transparent;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding: 0;
+
+  &::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+ion-header, .custom-header {
+  width: 100vw;
+  max-width: 420px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+}
+
+ion-toolbar {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+ion-title.header-title {
+  color: #ffd700 !important;
+  font-size: 22px !important;
+  font-family: 'Nunito', cursive, sans-serif;
+  font-weight: 800;
+  text-shadow: 0 2px 8px #764ba2cc;
+  letter-spacing: 1px;
+}
+
+ion-buttons {
+  display: flex;
+  align-items: center;
+}
+
+ion-button.back-btn {
+  background: linear-gradient(135deg, #ffd700 0%, #f093fb 100%);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px #ffd70088;
+  padding: 8px;
+  margin-right: 4px;
+  transition: background 0.2s, transform 0.2s;
+}
+
+ion-button.back-btn:hover {
+  background: linear-gradient(135deg, #f093fb 0%, #ffd700 100%);
+  transform: scale(1.1);
+}
+
+ion-icon[slot="icon-only"] {
+  color: #764ba2;
+  font-size: 28px;
+  transition: color 0.2s;
+}
+
+ion-button.back-btn:hover ion-icon[slot="icon-only"] {
+  color: #667eea;
+}
+
+.header-spacer {
+  display: none;
+}
+
+.section-label {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: #ffd700;
+  margin-bottom: 24px;
+  text-shadow: 0 4px 24px #764ba2cc;
+  letter-spacing: 2px;
+  font-family: 'Nunito', cursive, sans-serif;
+  animation: slideInDown 0.8s ease-out;
+
+  &::after {
+    content: '✨';
+    display: block;
+    font-size: 20px;
+    margin-top: 8px;
+    animation: sparkle 2s ease-in-out infinite;
+  }
+}
+.game-categories {
+  display: flex;
+  flex-direction: column; // <-- vertical layout
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.category-card {
+  background: linear-gradient(135deg, #f093fb 0%, #667eea 100%);
+  border-radius: 12px;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.13), 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid #fff;
+  position: relative;
+  overflow: hidden;
+
+  &:hover, &:focus {
+    transform: scale(1.05) rotate(-2deg);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #667eea 0%, #f093fb 100%);
+  }
+
+  .category-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+    animation: bounce 1.5s infinite;
+    filter: drop-shadow(0 1px 4px #ffd70088);
+  }
+
+  h3 {
+    font-size: 15px;
+    font-family: 'Nunito', cursive, sans-serif;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 4px #764ba2cc;
+  }
+
+  p {
+    font-size: 11px;
+    color: #ffe;
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px #764ba288;
+  }
+
+  .play-button {
+    background: linear-gradient(90deg, #ffd700 0%, #ff6b6b 100%);
+    color: #222;
+    border: none;
+    border-radius: 16px;
+    padding: 2px 16px;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px #ffd70088;
+    margin-top: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes floatAround {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) translateX(10px) rotate(90deg); }
+  50% { transform: translateY(-10px) translateX(-10px) rotate(180deg); }
+  75% { transform: translateY(-30px) translateX(5px) rotate(270deg); }
+}
+
+.floating-elements {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+
+  .floating-emoji {
+    position: absolute;
+    font-size: 18px;
+    animation: floatAround 8s ease-in-out infinite;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .emoji-1 { top: 10%; left: 10%; animation-delay: 0s; }
+  .emoji-2 { top: 20%; right: 15%; animation-delay: 2s; }
+  .emoji-3 { top: 60%; left: 5%; animation-delay: 4s; }
+  .emoji-4 { top: 70%; right: 10%; animation-delay: 6s; }
+}

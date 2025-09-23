@@ -1,0 +1,99 @@
+<ion-content class="signup-content" fullscreen>
+  <div class="signup-container">
+    <!-- Animated Background -->
+    <div class="background-animation">
+      <div class="floating-circle circle-1"></div>
+      <div class="floating-circle circle-2"></div>
+      <div class="floating-circle circle-3"></div>
+    </div>
+
+    <!-- Header with Back Button -->
+    <div class="header-section">
+      <ion-button 
+        fill="clear" 
+        class="back-btn" 
+        (click)="goToLogin()">
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </div>
+
+    <!-- Logo Section -->
+    <div class="logo-section">
+      <div class="app-logo-container">
+        <div class="logo-ring">
+          <ion-icon name="brain-outline" class="app-logo"></ion-icon>
+        </div>
+      </div>
+      <h1 class="app-name">alala</h1>
+      <p class="tagline">Join the Memory Care Family</p>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="signup-form">
+      <div class="form-container">
+        <h2>Create Account</h2>
+        
+        <div class="input-group">
+          <ion-item class="custom-input">
+            <ion-icon name="person-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="text" 
+              placeholder="Full Name" 
+              [(ngModel)]="name" 
+              name="name">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input">
+            <ion-icon name="mail-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="email" 
+              placeholder="Email" 
+              [(ngModel)]="email" 
+              name="email">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input">
+            <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="password" 
+              placeholder="Password" 
+              [(ngModel)]="password" 
+              name="password">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input">
+            <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="password" 
+              placeholder="Confirm Password" 
+              [(ngModel)]="confirmPassword" 
+              name="confirmPassword">
+            </ion-input>
+          </ion-item>
+        </div>
+
+        <ion-button 
+          expand="block" 
+          class="signup-btn" 
+          (click)="signup()"
+          [disabled]="isLoading">
+          <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
+          <span *ngIf="!isLoading">Create Account</span>
+          <span *ngIf="isLoading">Creating Account...</span>
+          <ion-icon name="rocket-outline" slot="end" *ngIf="!isLoading"></ion-icon>
+        </ion-button>
+
+        <div class="login-link">
+          <p>Already have an account? 
+            <span class="link-text" (click)="goToLogin()">Sign in here</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>
+
+

@@ -1,0 +1,98 @@
+<ion-header>
+  <ion-toolbar color="transparent">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home" fill="clear">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title color="light" class="header-title">🌈 Color Sequence</ion-title>
+    <ion-buttons slot="end">
+      <div class="level-display">
+        <span class="level-number">{{currentLevel}}</span>
+        <span class="level-label">Level</span>
+      </div>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="sequence-game-screen" fullscreen>
+  <div class="header-spacer"></div>
+  
+  <!-- Game Instructions -->
+  <div class="instructions" *ngIf="!gameStarted">
+    <div class="instruction-card">
+      <h2>🎯 How to Play</h2>
+      <p>Watch the colors light up, then repeat the sequence!</p>
+      <button class="start-button" (click)="startGame()">
+        <ion-icon name="play"></ion-icon>
+        Start Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Board -->
+  <div class="game-board" *ngIf="gameStarted && !gameOver">
+    <!-- Status Message -->
+    <div class="status-message">
+      <h3 *ngIf="showingSequence">Watch carefully! 👀</h3>
+      <h3 *ngIf="playerTurn && !showingSequence">Your turn! Tap the colors 🎨</h3>
+      <h3 *ngIf="!playerTurn && !showingSequence">Get ready...</h3>
+    </div>
+
+    <!-- Color Buttons -->
+    <div class="color-grid">
+      <div 
+        *ngFor="let color of colors; let i = index"
+        class="color-button"
+        [style.background]="color.color"
+        [class.active]="color.isActive"
+        [class.disabled]="showingSequence || !playerTurn"
+        (click)="playerSelectColor(i)">
+        <div class="color-glow" [style.box-shadow]="'0 0 30px ' + color.color"></div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="sequence-progress">
+        <span>Sequence: {{playerSequence.length}}/{{gameSequence.length}}</span>
+      </div>
+      <div class="score-display">
+        <span class="score-number">{{score}}</span>
+        <span class="score-label">Score</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="game-over" *ngIf="gameOver">
+    <div class="game-over-card">
+      <div class="result-icon">{{gameWon ? '🎉' : '😊'}}</div>
+      <h2>{{gameWon ? 'Amazing!' : 'Great Try!'}}</h2>
+      <p *ngIf="gameWon">You completed {{currentLevel}} levels!</p>
+      <p *ngIf="!gameWon">You reached level {{currentLevel}}!</p>
+      
+      <div class="final-stats">
+        <div class="stat">
+          <span class="number">{{currentLevel}}</span>
+          <span class="label">Levels</span>
+        </div>
+        <div class="stat">
+          <span class="number">{{score}}</span>
+          <span class="label">Score</span>
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="play-again-button" (click)="resetGame()">
+          <ion-icon name="refresh"></ion-icon>
+          Play Again
+        </button>
+        <button class="home-button" (click)="goHome()">
+          <ion-icon name="home"></ion-icon>
+          Home
+        </button>
+      </div>
+    </div>
+  </div>
+</ion-content>

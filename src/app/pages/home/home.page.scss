@@ -1,0 +1,574 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap');
+
+/* =========================================================
+   HEADER (Kept verbose + explicit)
+   ========================================================= */
+.app-header ion-toolbar {
+  --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --color: #fff;
+  --min-height: 64px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  padding: 0 8px;
+}
+ion-header ion-toolbar { --min-height: 64px; }
+ion-header ion-title { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+.app-title {
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: .5px;
+  color: #fff;
+}
+
+/* Patient Mode toggle chip (LEFT). Keep original class & add white variant */
+.mode-toggle {
+  --background: rgba(255,255,255,0.15);
+  --border-radius: 18px;
+  height: 34px;
+  display: flex; align-items: center; gap: 6px;
+  color: #fff;
+  padding: 0 10px;
+  font-size: 12px; font-weight: 700;
+  border: none;
+}
+.mode-toggle ion-icon { font-size: 16px; }
+.mode-toggle:hover { background: rgba(255,255,255,0.25); }
+
+/* White-styled toggle (for left side) */
+.mode-toggle.mode-white {
+  --background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.mode-toggle.mode-white:hover { background: rgba(255,255,255,0.22); }
+
+/* Icon-only button (kept for generic usage) */
+.icon-btn {
+  --background: transparent;
+  color: #fff;
+  margin-left: 4px;
+}
+.icon-btn ion-icon { font-size: 22px; }
+
+/* Specific Settings button on RIGHT with hover spin */
+.settings-btn {
+  --background: transparent;
+  color: #fff;
+  margin-left: 4px;
+  transition: transform .3s ease, color .3s ease;
+}
+.settings-btn ion-icon {
+  font-size: 22px;
+  transition: transform .6s ease;
+}
+.settings-btn:hover { color: #ffeb3b; }
+.settings-btn:hover ion-icon { transform: rotate(360deg) scale(1.15); }
+.settings-btn:active ion-icon { transform: rotate(15deg) scale(0.95); }
+
+/* =========================================================
+   BASE LAYOUT & BACKGROUND (Kept + explicit z-index ordering)
+   ========================================================= */
+.game-home-screen {
+  --ion-background-color: transparent;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  font-family: 'Nunito', sans-serif;
+
+  min-height: auto;
+  height: auto;
+
+  padding: 10px;
+  padding-bottom: 150px;
+
+  overflow-y: visible;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: float 20s ease-in-out infinite;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.05) 50%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+/* =========================================================
+   FLOATING DECOR (Ensure they NEVER intercept hover/click)
+   ========================================================= */
+.floating-elements,
+.floating-circles {
+  pointer-events: none; /* critical */
+  opacity: .15;
+}
+
+/* Floating Elements (emojis) */
+.floating-elements {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+.floating-elements .floating-emoji {
+  position: absolute; font-size: 24px;
+  animation: floatAround 8s ease-in-out infinite; opacity: .7;
+}
+.floating-elements .emoji-1 { top: 10%; left: 10%; animation-delay: 0s; }
+.floating-elements .emoji-2 { top: 20%; right: 15%; animation-delay: 2s; }
+.floating-elements .emoji-3 { top: 60%; left: 5%;  animation-delay: 4s; }
+.floating-elements .emoji-4 { top: 70%; right: 10%; animation-delay: 6s; }
+
+/* Floating Circles */
+.floating-circles {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+}
+.floating-circles .floating-circle {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  animation: floatCircle 12s ease-in-out infinite;
+}
+.floating-circles .circle-1 { width: 120px; height: 120px; top: 15%; left: 8%;  animation-delay: 0s; }
+.floating-circles .circle-2 { width: 80px;  height: 80px;  top: 25%; right: 12%; animation-delay: 3s; }
+.floating-circles .circle-3 { width: 150px; height: 150px; top: 55%; left: 15%; animation-delay: 6s; }
+
+/* =========================================================
+   PATIENT MODE SECTION (Kept)
+   ========================================================= */
+.patient-mode-banner {
+  background: linear-gradient(90deg, #4CAF50, #45a049);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 14px;
+  box-shadow: 0 2px 8px rgba(76,175,80,.3);
+  z-index: 2; position: relative;
+
+  ion-icon { font-size: 18px; }
+}
+
+.patient-mode-section {
+  padding: 16px;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+
+  .patient-mode-card {
+    background: rgba(255,255,255,.95);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+    border: 1px solid rgba(255,255,255,.2);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    animation: slideInUp .6s ease-out;
+
+    .mode-info {
+      display: flex; align-items: center; gap: 12px; flex: 1;
+
+      .mode-icon {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: rgba(0,0,0,.05);
+        display: flex; align-items: center; justify-content: center;
+        animation: pulse 2s ease-in-out infinite;
+
+        ion-icon { font-size: 20px; }
+      }
+
+      .mode-text {
+        h3 { font-size: 16px; font-weight: 600; color: #333; margin: 0 0 2px; }
+        p  { font-size: 13px; color: #666; margin: 0; }
+      }
+    }
+
+    ion-button {
+      --border-radius: 12px; height: 36px; font-weight: 600; min-width: 80px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.2);
+    }
+  }
+}
+
+/* =========================================================
+   PROFILE HEADER (Kept)
+   ========================================================= */
+.game-header {
+  padding: 20px 16px;
+  text-align: center;
+  position: relative;
+  z-index: 5;
+
+  .profile-bubble {
+    display: flex; flex-direction: column; align-items: center; gap: 15px;
+    animation: slideInDown .8s ease-out;
+
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: block;
+      object-fit: cover;
+      box-sizing: border-box;
+      border: 3px solid transparent;
+      padding: 3px;
+      background:
+        linear-gradient(#ffffff, #ffffff) padding-box,
+        linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) border-box;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    .welcome-badge {
+      h1 { font-size: 24px; font-weight: 700; color: #fff; margin: 0; text-shadow: 0 4px 20px rgba(0,0,0,.3); }
+      p  { font-size: 16px; color: rgba(255,255,255,.9); margin: 5px 0 0; text-shadow: 0 2px 10px rgba(0,0,0,.2); }
+    }
+  }
+}
+
+/* =========================================================
+   SECTIONS & HEADERS (Kept)
+   ========================================================= */
+.game-section {
+  margin: 25px 0;
+  padding: 0 10px;
+  position: relative;
+  z-index: 6;            /* put above decor */
+  isolation: isolate;     /* create stacking context */
+}
+.game-section:last-child { margin-bottom: 80px; }
+
+.section-title-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.add-inline {
+  margin: 0;
+  --padding-start: 4px;
+  --padding-end: 4px;
+}
+
+.section-header-text {
+  margin-bottom: 16px; text-align: left; animation: slideInLeft .8s ease-out;
+
+  h2 {
+    font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 8px;
+    text-shadow: 0 4px 20px rgba(0,0,0,.3);
+
+    &::after { content: '✨'; font-size: 16px; animation: sparkle 2s ease-in-out infinite; }
+  }
+
+  p { font-size: 15px; color: rgba(255,255,255,.95); margin: 0; font-weight: 400; text-shadow: 0 2px 10px rgba(0,0,0,.2); }
+}
+
+/* =========================================================
+   GRID & CARD (Verbose + z-index fix)
+   ========================================================= */
+.game-grid {
+  display: grid;
+  gap: 14px;
+  position: relative;
+  z-index: 10; /* above earlier sections */
+}
+.game-grid.memory-categories { grid-template-columns: repeat(2, 1fr); }
+.game-grid.media-albums      { grid-template-columns: repeat(2, 1fr); }
+.game-grid.brain-games       { grid-template-columns: repeat(2, 1fr); }
+
+.game-card {
+  background: rgba(255,255,255,.96);
+  border-radius: 22px;
+  padding: 18px 14px;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.35);
+  transition: transform .3s ease, box-shadow .3s ease;
+  cursor: pointer;
+  position: relative; overflow: hidden; min-height: 168px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  backdrop-filter: blur(10px);
+  animation: slideInUp .8s ease-out;
+  z-index: 20;           /* keep above everything else */
+  pointer-events: auto;  /* ensure hover works */
+}
+.game-card::before {
+  content: '';
+  position: absolute; inset: -2px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+  border-radius: 22px; opacity: 0; transition: opacity .3s ease; z-index: -1;
+  animation: rainbow 3s linear infinite;
+  pointer-events: none;
+}
+.game-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 38px rgba(0,0,0,.25);
+}
+.game-card:hover::before { opacity: 1; }
+
+.game-card .card-glow {
+  position: absolute; inset: 0;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,.12), transparent);
+  opacity: 0; transition: opacity .3s ease; pointer-events: none;
+}
+.game-card:hover .card-glow { opacity: 1; }
+
+.game-card .game-icon { font-size: 40px; margin-bottom: 8px; transition: transform .25s ease; }
+.game-card h3 { font-size: 16px; font-weight: 800; color: #1f2937; margin: 0 0 4px; }
+.game-card p  { font-size: 13px; color: rgba(31,41,55,.85); margin: 0 0 12px; line-height: 1.35; }
+
+.game-card .play-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff; padding: 10px 14px; border-radius: 24px;
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  margin-top: auto;
+  box-shadow: 0 6px 18px rgba(102,126,234,.45);
+  transition: transform .2s ease;
+}
+.game-card .play-button ion-icon { font-size: 14px; }
+.game-card:hover .play-button { transform: scale(1.05); }
+
+.game-card.people-game  { animation-delay: .1s; }
+.game-card.places-game  { animation-delay: .2s; }
+.game-card.objects-game { animation-delay: .3s; }
+.game-card.memory-game  { animation-delay: .4s; }
+.game-card.mini-games   { animation-delay: .5s; }
+
+/* =========================================================
+   QUICK PROGRESS (Kept)
+   ========================================================= */
+.progress-summary-card {
+  background: rgba(255,255,255,.95);
+  border-radius: 16px; padding: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.2);
+
+  .summary-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;
+
+    .summary-stat {
+      display: flex; align-items: center; gap: 10px;
+
+      .stat-icon {
+        font-size: 24px; width: 40px; height: 40px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(102,126,234,.1); border-radius: 12px;
+      }
+      .stat-info {
+        display: flex; flex-direction: column;
+        .stat-number { font-size: 20px; font-weight: 800; color: #333; line-height: 1; }
+        .stat-label  { font-size: 11px; color: #666; font-weight: 600; }
+      }
+    }
+  }
+
+  .view-details-btn {
+    --color: #667eea;
+    font-weight: 700; font-size: 13px;
+    margin: 0; width: 100%; justify-content: space-between;
+  }
+  .view-details-btn ion-icon { font-size: 14px; }
+}
+
+/* =========================================================
+   FOOTER (Kept)
+   ========================================================= */
+.tab-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border-top: 2px solid #667eea;
+  box-shadow: 0 -8px 32px rgba(102,126,234,.3);
+  z-index: 1000;
+}
+.tab-footer::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+}
+
+.tab-footer .tab-nav {
+  display: flex; height: 70px; align-items: center; position: relative; padding: 0 10px;
+}
+.tab-footer .tab-item {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer; transition: all .25s ease;
+  padding: 10px 6px; border-radius: 12px; position: relative;
+  min-width: 100px;
+}
+.tab-footer .tab-item::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 2px; background: #667eea; transition: width .25s ease;
+}
+.tab-footer .tab-item ion-icon {
+  font-size: 28px; color: #c7cee2;
+  transition: all .25s ease;
+  filter: drop-shadow(0 0 8px rgba(102,126,234,0));
+}
+.tab-footer .tab-item span {
+  font-size: 12px; color: #c7cee2; font-weight: 800; letter-spacing: .3px;
+  text-transform: none; transition: color .25s ease;
+}
+.tab-footer .tab-item:hover {
+  background: rgba(102,126,234,.1); transform: translateY(-2px);
+}
+.tab-footer .tab-item:hover::before { width: 36px; }
+.tab-footer .tab-item:hover ion-icon {
+  color: #8ea2ff; filter: drop-shadow(0 0 10px rgba(102,126,234,.5)); transform: scale(1.06);
+}
+.tab-footer .tab-item:hover span { color: #8ea2ff; }
+
+.tab-footer .tab-item.active:not(.center-home) {
+  background: rgba(102,126,234,.14);
+}
+.tab-footer .tab-item.active:not(.center-home)::before { width: 44px; }
+.tab-footer .tab-item.active:not(.center-home) ion-icon {
+  color: #a7b6ff; filter: drop-shadow(0 0 12px rgba(102,126,234,.6)); transform: scale(1.08);
+}
+.tab-footer .tab-item.active:not(.center-home) span { color: #a7b6ff; }
+
+.tab-footer .tab-item.center-home { position: relative; }
+.tab-footer .tab-item.center-home .home-circle {
+  width: 68px; height: 68px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(102,126,234,.6), 0 0 40px rgba(102,126,234,.6), inset 0 2px 10px rgba(255,255,255,.2);
+  border: 3px solid #1a1a2e;
+  cursor: pointer; transition: transform .3s ease, box-shadow .3s ease;
+  margin-top: -15px; position: relative;
+}
+.tab-footer .tab-item.center-home .home-circle::before {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+  z-index: -1; opacity: 0; transition: opacity .3s ease;
+}
+.tab-footer .tab-item.center-home .home-circle::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); width: 84px; height: 84px;
+  border: 2px solid rgba(102,126,234,.3); border-radius: 50%; animation: pulse-ring 2s infinite;
+}
+.tab-footer .tab-item.center-home .home-circle ion-icon {
+  font-size: 28px; color: #fff; filter: drop-shadow(0 2px 8px rgba(0,0,0,.3)); z-index: 2;
+}
+.tab-footer .tab-item.center-home .home-circle:hover {
+  transform: scale(1.12) translateY(-3px);
+  box-shadow: 0 0 30px rgba(102,126,234,.8), 0 0 60px rgba(102,126,234,.6), inset 0 2px 15px rgba(255,255,255,.3);
+}
+.tab-footer .tab-item.center-home .home-circle:hover::before { opacity: 1; }
+.tab-footer .tab-item.center-home .home-circle:active { transform: scale(1.05) translateY(-2px); }
+
+/* =========================================================
+   DELETE CHIP (Kept same visuals)
+   ========================================================= */
+.delete-chip {
+  position: absolute;
+  top: 8px; right: 10px;
+  width: 36px; height: 36px;
+  border: none; border-radius: 999px;
+  background: rgba(0,0,0,0.6);
+  color: #fff; font-size: 22px; line-height: 36px; text-align: center;
+  cursor: pointer;
+  z-index: 25;
+  transition: transform .12s ease, opacity .12s ease;
+}
+.delete-chip:active { transform: scale(0.98); }
+
+/* =========================================================
+   GENERIC / GLOBAL
+   ========================================================= */
+ion-content { --padding-bottom: 100px; --overflow: auto; height: auto; }
+* { overflow-x: visible; }
+
+/* Focus rings (Kept) */
+.game-card:focus-visible,
+.tab-footer .tab-item:focus-visible {
+  outline: 3px solid #f093fb;
+  outline-offset: 3px;
+  border-radius: 16px;
+}
+
+/* =========================================================
+   ANIMATIONS (Kept)
+   ========================================================= */
+@keyframes slideInDown { from { opacity: 0; transform: translateY(-50px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes slideInUp   { from { opacity: 0; transform: translateY(50px);}  to { opacity: 1; transform: translateY(0);} }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px);} to { opacity: 1; transform: translateX(0);} }
+@keyframes float       { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-20px) rotate(180deg)} }
+@keyframes bounce      { 0%,20%,50%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-10px)} 60%{transform:translateY(-5px)} }
+@keyframes sparkle     { 0%,100%{transform:scale(1) rotate(0);opacity:1} 50%{transform:scale(1.2) rotate(180deg);opacity:.8} }
+@keyframes pulse       { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+@keyframes rainbow     { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+@keyframes shimmer     { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+@keyframes floatAround { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-2px, -12px) rotate(90deg)} 50%{transform:translate(-6px,-4px) rotate(180deg)} 75%{transform:translate(-2px,-16px) rotate(270deg)} }
+@keyframes floatCircle {
+  0%,100%{transform:translateY(0) translateX(0) scale(1); opacity:.08}
+  25%{transform:translateY(-20px) translateX(15px) scale(1.1); opacity:.12}
+  50%{transform:translateY(-10px) translateX(-10px) scale(.9); opacity:.06}
+  75%{transform:translateY(-30px) translateX(8px) scale(1.05); opacity:.1}
+}
+@keyframes pulse-ring { 0%{transform:translate(-50%,-50%) scale(.8); opacity:1} 100%{transform:translate(-50%,-50%) scale(1.2); opacity:0} }
+
+/* =========================================================
+   ACCESSIBILITY: REDUCED MOTION (Kept)
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .floating-elements *, .floating-circles *, .game-card,
+  .game-header .profile-bubble, .game-section .section-header-text {
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   MOBILE TUNING (Kept)
+   ========================================================= */
+@media (max-width: 480px) {
+  .game-home-screen { padding: 8px; padding-bottom: 180px; min-height: auto; height: auto; }
+  ion-content { --padding-bottom: 120px; height: auto; }
+
+  .game-grid.memory-categories,
+  .game-grid.media-albums,
+  .game-grid.brain-games { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+  .game-card { min-height: 160px; padding: 16px 12px; }
+  .game-card .game-icon { font-size: 36px; }
+  .game-card h3 { font-size: 15px; }
+  .game-card p  { font-size: 12.5px; }
+  .game-card .play-button { font-size: 12px; }
+
+  .tab-footer .tab-nav { height: 65px; padding: 0 5px; }
+  .tab-footer .tab-nav .tab-item { padding: 8px 2px; }
+  .tab-footer .tab-nav .tab-item.center-home .home-circle {
+    width: 62px; height: 62px; border: 2px solid #1a1a2e; margin-top: -12px;
+  }
+}
+
+/* =========================================================
+   EXTRA-SMALL (Kept)
+   ========================================================= */
+@media (max-width: 360px) {
+  .game-home-screen { padding: 6px; padding-bottom: 200px; }
+  .game-section:last-child { margin-bottom: 120px; }
+}
+
+/* Force Patient/Standard mode + Settings button text and icons white */
+.mode-toggle,
+.settings-btn {
+  --color: #fff !important;
+  color: #fff !important;
+}
+
+.mode-toggle ion-icon,
+.settings-btn ion-icon {
+  color: #fff !important;
+  fill: #fff !important;
+}
+

@@ -1,0 +1,118 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <!-- Back button (left) -->
+    <ion-buttons slot="start">
+      <ion-button class="icon-btn back-btn" fill="clear" routerLink="/home">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!-- Title (center) -->
+    <ion-title class="app-title">Photo Memories</ion-title>
+
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content class="game-home-screen" [fullscreen]="true">
+  <!-- Same floating decor hooks as People page -->
+  <div class="floating-elements">
+    <div class="floating-emoji emoji-1">🧠</div>
+    <div class="floating-emoji emoji-2">💭</div>
+    <div class="floating-emoji emoji-3">❤️</div>
+    <div class="floating-emoji emoji-4">🌟</div>
+  </div>
+  <div class="floating-circles">
+    <div class="floating-circle circle-1"></div>
+    <div class="floating-circle circle-2"></div>
+    <div class="floating-circle circle-3"></div>
+  </div>
+
+  <!-- Viewer (same layout as People; Skip removed) -->
+  <div class="page-body" *ngIf="currentCard as card; else emptyState">
+    <div class="people-grid">
+      <!-- Name -->
+      <div class="area area-name">
+        <div class="name-tag">{{ card.label }}</div>
+      </div>
+
+      <!-- Image -->
+      <div class="area area-image">
+        <div class="image-container">
+          <img [src]="imgSrc(card)" [alt]="card.label || 'Memory'" />
+          <!-- Delete “×” overlay (hidden in Patient Mode) -->
+          <button
+            type="button"
+            class="delete-chip"
+            aria-label="Delete"
+            title="Delete"
+            (click)="deleteCurrent()"
+            *ngIf="!isPatientMode">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <!-- Play button -->
+<div class="area area-controls">
+  <ion-button
+    shape="round"
+    fill="solid"
+    color="light"
+    class="play-btn big-round"
+    (click)="togglePlay()"
+    [disabled]="!card?.audio">
+    <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+  </ion-button>
+</div>
+
+
+      <!-- Timeline -->
+      <div class="area area-timeline">
+        <div class="audio-timeline" [class.disabled]="!card.audio">
+          <ion-range
+            [disabled]="!card.audio"
+            [min]="0"
+            [max]="duration || 0"
+            [value]="current"
+            (ionChange)="onSeek($event)"
+            snaps="true"
+            pin="true">
+          </ion-range>
+          <div class="time-display">
+            {{ (current/60)   | number:'1.0-0' }}:{{ (current%60) | number:'2.0-0' }}
+            /
+            {{ (duration/60)  | number:'1.0-0' }}:{{ (duration%60) | number:'2.0-0' }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Prev / Next (category-match style) -->
+      <div class="area area-nav" *ngIf="cards.length > 1">
+        <div class="nav-choices-grid">
+          <button class="option-button" (click)="prev()">
+            <ion-icon name="chevron-back" class="option-caret left"></ion-icon>
+            <div class="option-text">Previous</div>
+          </button>
+          <button class="option-button" (click)="next()">
+            <div class="option-text">Next</div>
+            <ion-icon name="chevron-forward" class="option-caret"></ion-icon>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <ng-template #emptyState>
+    <div class="empty-state-wrapper">
+      <div class="empty-state">
+        <ion-icon class="empty-icon" name="images-outline"></ion-icon>
+        <h2>No Photo Memories yet</h2>
+        <div class="empty-message">
+          Add items in People, Places, or Objects to see them here.
+        </div>
+      </div>
+    </div>
+  </ng-template>
+</ion-content>
