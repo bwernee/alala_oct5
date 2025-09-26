@@ -503,8 +503,8 @@ export class NameThatMemoryPage implements OnInit, OnDestroy {
 
   /* --------- Template helpers --------- */
   imgSrc(card: GameCard | null): string {
-    if (!card) return 'assets/img/placeholder.png';
-    return card.image || 'assets/img/placeholder.png';
+    if (!card) return '';
+    return card.image;
   }
 
   /* --------- Utils --------- */

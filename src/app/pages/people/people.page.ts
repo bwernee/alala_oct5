@@ -216,9 +216,6 @@ export class PeoplePage implements OnInit, OnDestroy {
 
   // ===== Add / Delete =====
   // Navigate instead of modal
-  openAddFlashcardModal() {
-    this.router.navigate(['/add-flashcard']);
-  }
 
   async deleteCurrentCard() {
   if (!this.currentCard) return;

@@ -154,11 +154,8 @@ export class CustomCategoryPage implements OnInit, OnDestroy {
   /* ---------- Add / Delete ---------- */
   onAddCard() {
     if (this.isPatientMode) return;
-    // Navigate to Add Flashcard with defaults so it saves here
-    this.router.navigate(['/add-flashcard'], {
-      state: { defaultCategoryId: this.id, defaultCategoryName: this.title },
-      queryParams: { defaultCategoryId: this.id }
-    });
+    // Flashcard functionality removed
+    console.log('Add card functionality has been removed');
   }
 
   async onDeleteCategory() {

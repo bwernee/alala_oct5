@@ -36,14 +36,6 @@ const routes: Routes = [
     loadChildren: () => import('./pages/places/places.module').then( m => m.PlacesPageModule)
   },
   
-  {
-    path: 'add-flashcard',
-    loadChildren: () => import('./add-flashcard/add-flashcard.module').then( m => m.AddFlashcardPageModule)
-  },
-  {
-    path: 'flashcard-games',
-    loadChildren: () => import('./pages/flashcard-games/flashcard-games.module').then(m => m.FlashcardGamesPageModule)
-  },
     {
     path: 'progress',
     loadChildren: () => import('./pages/progress/progress.module').then( m => m.ProgressPageModule)

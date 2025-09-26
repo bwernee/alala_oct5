@@ -59,7 +59,7 @@
   <div class="profile-bubble">
     <!-- round avatar; no CSS changes needed because ion-avatar is circular -->
     <ion-avatar class="profile-avatar">
-      <img [src]="userPhoto || 'assets/images/profile-placeholder.png'" alt="Profile" />
+      <img [src]="userPhoto" alt="Profile" />
     </ion-avatar>
 
     <div class="welcome-badge">
@@ -266,9 +266,9 @@
 <!-- Tab Navigation Footer (hidden in Patient Mode) -->
 <div class="tab-footer" *ngIf="!isPatientMode">
   <div class="tab-nav">
-    <div class="tab-item" routerLink="/people" aria-label="Flashcards">
+    <div class="tab-item" routerLink="/people" aria-label="People">
       <ion-icon name="albums-outline"></ion-icon>
-      <span>Flashcards</span>
+      <span>People</span>
     </div>
 
     <div class="tab-item center-home active" routerLink="/home" aria-label="Home">

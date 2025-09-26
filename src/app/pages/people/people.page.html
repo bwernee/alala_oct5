@@ -12,9 +12,6 @@
 
     <!-- Settings button (right) -->
     <ion-buttons slot="end">
-      <ion-button class="icon-btn settings-btn" fill="clear" routerLink="/add-flashcard">
-        <ion-icon name="add-circle-outline"></ion-icon>
-      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -40,11 +37,7 @@
       <div class="empty-state">
         <div class="empty-icon">🧠</div>
         <h2>No People Yet</h2>
-        <p class="empty-message">Add some loved ones to get started.</p>
-        <ion-button color="primary" routerLink="/add-flashcard" expand="block" class="btn-grad-purple big-btn" *ngIf="!isPatientMode">
-          <ion-icon name="add" slot="start"></ion-icon>
-          Add Person
-        </ion-button>
+        <p class="empty-message">No people added yet.</p>
       </div>
     </div>
 
@@ -61,7 +54,7 @@
       <div class="area area-image">
         <div class="image-container">
           <img
-            [src]="currentCard.image || 'assets/img/placeholder.png'"
+            [src]="currentCard.image"
             [alt]="currentCard.label || 'Person'"
           />
 

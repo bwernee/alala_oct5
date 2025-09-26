@@ -212,9 +212,6 @@ export class PlacesPage implements OnInit, OnDestroy {
   }
 
   // ===== Add / Delete =====
-  openAddFlashcardModal() {
-    this.router.navigate(['/add-flashcard']);
-  }
 
   async deleteCurrentCard() {
   if (!this.currentCard) return;

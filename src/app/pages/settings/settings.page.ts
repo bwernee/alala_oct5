@@ -360,7 +360,7 @@ export class SettingsPage implements OnInit {
   async clearAllData() {
     const alert = await this.alertCtrl.create({
       header: 'Clear All Data',
-      message: 'Remove all flashcards and game progress? This cannot be undone.',
+      message: 'Remove all game progress? This cannot be undone.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {

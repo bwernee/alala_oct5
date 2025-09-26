@@ -28,8 +28,29 @@
     <div class="floating-circle circle-3"></div>
   </div>
 
-  <!-- Viewer (same layout as People; Skip removed) -->
-  <div class="page-body" *ngIf="currentCard as card; else emptyState">
+  <!-- Gallery Grid View (for caregiver/standard mode) -->
+  <div class="gallery-container" *ngIf="!isPatientMode && cards.length > 0">
+    <div class="gallery-grid">
+      <div 
+        class="gallery-item" 
+        *ngFor="let card of cards; let i = index"
+        (click)="openDetailView(card, i)">
+        <div class="gallery-image-container">
+          <img [src]="imgSrc(card)" [alt]="card.label || 'Memory'" class="gallery-image" />
+          <div class="gallery-overlay">
+            <div class="gallery-label">{{ card.label }}</div>
+            <div class="gallery-category">{{ card.category }}</div>
+            <div class="gallery-audio-indicator" *ngIf="card.audio">
+              <ion-icon name="volume-high"></ion-icon>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flashcard View (for patient mode) -->
+  <div class="page-body" *ngIf="isPatientMode && currentCard as card; else emptyState">
     <div class="people-grid">
       <!-- Name -->
       <div class="area area-name">
@@ -40,32 +61,21 @@
       <div class="area area-image">
         <div class="image-container">
           <img [src]="imgSrc(card)" [alt]="card.label || 'Memory'" />
-          <!-- Delete “×” overlay (hidden in Patient Mode) -->
-          <button
-            type="button"
-            class="delete-chip"
-            aria-label="Delete"
-            title="Delete"
-            (click)="deleteCurrent()"
-            *ngIf="!isPatientMode">
-            &times;
-          </button>
         </div>
       </div>
 
       <!-- Play button -->
-<div class="area area-controls">
-  <ion-button
-    shape="round"
-    fill="solid"
-    color="light"
-    class="play-btn big-round"
-    (click)="togglePlay()"
-    [disabled]="!card?.audio">
-    <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
-  </ion-button>
-</div>
-
+      <div class="area area-controls">
+        <ion-button
+          shape="round"
+          fill="solid"
+          color="light"
+          class="play-btn big-round"
+          (click)="togglePlay()"
+          [disabled]="!card?.audio">
+          <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+        </ion-button>
+      </div>
 
       <!-- Timeline -->
       <div class="area area-timeline">
@@ -115,4 +125,76 @@
       </div>
     </div>
   </ng-template>
+
+  <!-- Detail View Modal -->
+  <ion-modal [isOpen]="showDetailModal" (didDismiss)="closeDetailView()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ selectedCard?.label }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeDetailView()">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content *ngIf="selectedCard">
+        <div class="detail-container">
+          <div class="detail-image-container">
+            <img [src]="imgSrc(selectedCard)" [alt]="selectedCard.label" class="detail-image" />
+          </div>
+          <div class="detail-info">
+            <h2>{{ selectedCard.label }}</h2>
+            <p class="detail-category">{{ selectedCard.category }}</p>
+            <p class="detail-date" *ngIf="selectedCard.createdAt">
+              Added: {{ selectedCard.createdAt | date:'medium' }}
+            </p>
+            
+            <!-- Audio Section -->
+            <div class="detail-audio" *ngIf="selectedCard.audio">
+              <h3>Audio Recording</h3>
+              <div class="audio-controls">
+                <ion-button 
+                  shape="round" 
+                  fill="solid" 
+                  color="primary"
+                  (click)="togglePlay()"
+                  [disabled]="!selectedCard.audio">
+                  <ion-icon [name]="isPlaying ? 'pause' : 'play'"></ion-icon>
+                </ion-button>
+                <div class="audio-timeline">
+                  <ion-range
+                    [disabled]="!selectedCard.audio"
+                    [min]="0"
+                    [max]="duration || 0"
+                    [value]="current"
+                    (ionChange)="onSeek($event)"
+                    snaps="true"
+                    pin="true">
+                  </ion-range>
+                  <div class="time-display">
+                    {{ (current/60) | number:'1.0-0' }}:{{ (current%60) | number:'2.0-0' }}
+                    /
+                    {{ (duration/60) | number:'1.0-0' }}:{{ (duration%60) | number:'2.0-0' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Button (only in standard/caregiver mode) -->
+            <div class="detail-actions" *ngIf="!isPatientMode">
+              <ion-button 
+                color="danger" 
+                fill="outline" 
+                (click)="deleteCard(selectedCard)">
+                <ion-icon name="trash" slot="start"></ion-icon>
+                Delete Memory
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

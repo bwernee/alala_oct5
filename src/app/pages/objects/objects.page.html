@@ -12,9 +12,6 @@
 
     <!-- Settings button (right) -->
     <ion-buttons slot="end">
-      <ion-button class="icon-btn settings-btn" fill="clear" routerLink="/add-flashcard">
-        <ion-icon name="add-circle-outline"></ion-icon>
-      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
@@ -65,7 +62,7 @@
       <div class="area area-image">
         <div class="image-container">
           <img
-            [src]="currentCard.image || 'assets/img/placeholder.png'"
+            [src]="currentCard.image"
             [alt]="currentCard.label || 'Object'" />
 
           <!-- Delete “×” overlay (hidden in Patient Mode) -->

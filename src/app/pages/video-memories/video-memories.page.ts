@@ -36,6 +36,7 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('galleryInput') galleryInput!: ElementRef<HTMLInputElement>;
   @ViewChild('reels') reelsEl?: ElementRef<HTMLElement>;
   @ViewChildren('vidRef') vidRefs!: QueryList<ElementRef<HTMLVideoElement>>;
+  @ViewChild('detailVideoRef') detailVideoRef!: ElementRef<HTMLVideoElement>;
 
   isPatientMode = false;
   private patientModeListener?: (e: any) => void;
@@ -61,6 +62,14 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
   private scrollEndTimer: any = null;
   private isJumping = false;
   private currentDisplayIndex = 0;
+
+  /** Gallery functionality */
+  showDetailModal = false;
+  selectedVideo: VideoView | null = null;
+  selectedVideoIndex = -1;
+  isDetailVideoPlaying = false;
+  detailVideoCurrent = 0;
+  detailVideoDuration = 0;
 
   constructor(
     private _plt: Platform,
@@ -476,5 +485,106 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
     const { role, data } = await alert.onDidDismiss();
     if (role !== 'confirm') return null;
     return (data?.values?.label ?? '') as string;
+  }
+
+  // ===== Gallery functionality =====
+  openDetailView(video: VideoView, index: number) {
+    this.selectedVideo = video;
+    this.selectedVideoIndex = index;
+    this.showDetailModal = true;
+    this.editLabel = video.label || '';
+  }
+
+  closeDetailView() {
+    this.showDetailModal = false;
+    this.selectedVideo = null;
+    this.selectedVideoIndex = -1;
+    this.isDetailVideoPlaying = false;
+    this.detailVideoCurrent = 0;
+    this.detailVideoDuration = 0;
+  }
+
+  onDetailVideoLoaded() {
+    const video = this.detailVideoRef?.nativeElement;
+    if (video) {
+      this.detailVideoDuration = video.duration || 0;
+    }
+  }
+
+  onDetailVideoTimeUpdate() {
+    const video = this.detailVideoRef?.nativeElement;
+    if (video) {
+      this.detailVideoCurrent = video.currentTime || 0;
+    }
+  }
+
+  toggleDetailVideoPlay() {
+    const video = this.detailVideoRef?.nativeElement;
+    if (!video) return;
+
+    if (this.isDetailVideoPlaying) {
+      video.pause();
+      this.isDetailVideoPlaying = false;
+    } else {
+      video.play().then(() => {
+        this.isDetailVideoPlaying = true;
+      }).catch(() => {
+        this.isDetailVideoPlaying = false;
+      });
+    }
+  }
+
+  onDetailVideoSeek(event: CustomEvent) {
+    const video = this.detailVideoRef?.nativeElement;
+    if (!video) return;
+
+    const value = Number(event.detail?.value || 0);
+    video.currentTime = value;
+    this.detailVideoCurrent = value;
+  }
+
+  async deleteVideoFromGallery(index: number) {
+    if (this.isPatientMode) return;
+
+    const video = this.videos[index];
+    if (!video) return;
+
+    const alert = await this.alertCtrl.create({
+      header: 'Delete Video',
+      message: `Remove "${video.label || 'this video'}" from your memories?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Delete', role: 'destructive', handler: () => this.performDeleteVideo(index) }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async performDeleteVideo(index: number) {
+    try {
+      const video = this.videos[index];
+      if (!video) return;
+
+      // Remove file from filesystem
+      try { 
+        await Filesystem.deleteFile({ path: video.path, directory: Directory.Data }); 
+      } catch {}
+
+      // Update local arrays
+      this.videos.splice(index, 1);
+      this.rebuildDisplay();
+      this.prepareProgress();
+
+      // Close detail view if this was the selected video
+      if (this.selectedVideo && this.selectedVideo.id === video.id) {
+        this.closeDetailView();
+      }
+
+      // Persist changes
+      await this.persistMetadata();
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('Failed to delete video:', error);
+    }
   }
 }

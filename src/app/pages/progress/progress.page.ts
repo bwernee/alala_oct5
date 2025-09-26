@@ -30,36 +30,7 @@ export class ProgressPage implements OnInit {
     skippedCards: 0
   };
 
-  categoryStats = [
-    {
-      name: 'People',
-      icon: '👨‍👩‍👧‍👦',
-      accuracy: 0,
-      cardsPlayed: 0,
-      avgTime: 0
-    },
-    {
-      name: 'Places',
-      icon: '🏡',
-      accuracy: 0,
-      cardsPlayed: 0,
-      avgTime: 0
-    },
-    {
-      name: 'Objects',
-      icon: '🧸',
-      accuracy: 0,
-      cardsPlayed: 0,
-      avgTime: 0
-    },
-    {
-      name: 'Category Match',
-      icon: '🎯',
-      accuracy: 0,
-      cardsPlayed: 0,
-      avgTime: 0
-    }
-  ];
+  categoryStats: any[] = []; // Empty - will be populated from Firebase data
 
   recentSessions: any[] = [];
   insights: any[] = [];
@@ -69,319 +40,96 @@ export class ProgressPage implements OnInit {
 
   async ngOnInit() {
     await this.loadChartJS();
-    await this.checkFirebaseConnection();
     await this.loadProgressData();
     this.generateInsights();
-
     if (this.chartLoaded) {
-      setTimeout(() => {
-        this.createChart();
-      }, 100);
-    }
-  }
-
-  async ionViewDidEnter() {
-    // Reload all data when user returns to this page (e.g., after playing a quiz)
-    console.log('📈 View entered, reloading all progress data');
-    await this.loadProgressData();
-    this.generateInsights();
-
-    // Update chart with fresh data
-    if (this.chartLoaded && this.chart) {
-      console.log('📈 Updating chart with fresh data');
-      this.updateChart();
+      await this.createChart();
     }
   }
 
   async loadChartJS() {
     try {
-      const chartModule = await import('chart.js');
-      const { Chart, registerables } = chartModule;
-      Chart.register(...registerables);
-      (window as any).Chart = Chart;
-      this.chartLoaded = true;
+      // Check if Chart.js is already loaded
+      if ((window as any).Chart) {
+        this.chartLoaded = true;
+        console.log('📈 Chart.js already loaded');
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+      script.onload = () => {
+        this.chartLoaded = true;
+        console.log('📈 Chart.js loaded successfully');
+      };
+      script.onerror = () => {
+        console.error('Failed to load Chart.js');
+        this.chartLoaded = false;
+      };
+      document.head.appendChild(script);
     } catch (error) {
-      console.warn('Chart.js not available, charts will be disabled');
+      console.error('Failed to load Chart.js:', error);
       this.chartLoaded = false;
     }
   }
 
-  togglePatientMode() {
-    this.isPatientMode = !this.isPatientMode;
-  }
-
-  async checkFirebaseConnection() {
-    try {
-      const user = this.firebaseService.getCurrentUser();
-      if (user) {
-        // Try to fetch a small amount of data to test connection
-        await this.firebaseService.getUserGameSessions();
-        this.isFirebaseConnected = true;
-        this.dataSource = 'Firebase (Cloud)';
-        console.log('✅ Firebase connection successful');
-      } else {
-        this.isFirebaseConnected = false;
-        this.dataSource = 'Local Storage (Offline)';
-        console.log('❌ No authenticated user');
-      }
-    } catch (error) {
-      this.isFirebaseConnected = false;
-      this.dataSource = 'Local Storage (Offline)';
-      console.error('❌ Firebase connection failed:', error);
-    }
-  }
-
-  async onPeriodChange() {
-    console.log('Period changed to:', this.selectedPeriod);
-
-    // Set default dates for custom range
-    if (this.selectedPeriod === 'custom' && !this.customStartDate) {
-      const today = new Date();
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-      this.customStartDate = weekAgo.toISOString();
-      this.customEndDate = today.toISOString();
-    }
-
-    // Reload all data and update chart
-    await this.loadProgressData();
-    this.generateInsights();
-
-    if (this.chart) {
-      await this.updateChart();
-    }
-  }
-
-  async onCustomDateChange() {
-    if (this.customStartDate && this.customEndDate) {
-      console.log('Custom date range:', this.customStartDate, 'to', this.customEndDate);
-      await this.loadProgressData();
-      this.generateInsights();
-
-      if (this.chart) {
-        await this.updateChart();
-      }
-    }
-  }
-
-  getDateRange(): { start: Date, end: Date } {
-    const now = new Date();
-    let start: Date;
-    let end: Date = now;
-
-    switch (this.selectedPeriod) {
-      case 'today':
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        console.log(`📅 Today filter: ${start.toLocaleDateString()} ${start.toLocaleTimeString()} to ${end.toLocaleDateString()} ${end.toLocaleTimeString()}`);
-        break;
-      case 'week':
-        // Get the next 7 days from today (today + 6 days ahead)
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        end = new Date(now.getTime() + 6 * 24 * 60 * 60 * 1000);
-        end.setHours(23, 59, 59, 999);
-        console.log(`📅 Week filter: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`);
-        break;
-      case 'month':
-        // Show the entire current month (from 1st to last day of current month)
-        start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        console.log(`📅 Month filter: ${start.toLocaleDateString()} to ${end.toLocaleDateString()}`);
-        break;
-      case 'custom':
-        if (this.customStartDate) {
-          start = new Date(this.customStartDate);
-          start.setHours(0, 0, 0, 0); // Start of day
-        } else {
-          start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        }
-        if (this.customEndDate) {
-          end = new Date(this.customEndDate);
-          end.setHours(23, 59, 59, 999); // End of day
-        } else {
-          end = now;
-        }
-        break;
-      case 'all':
-      default:
-        start = new Date(0); // Beginning of time
-        break;
-    }
-
-    return { start, end };
-  }
-
   async loadProgressData() {
     try {
-      this.isLoading = true;
       console.log('📊 Loading progress data...');
-
-      // For now, always use local storage to avoid Firebase issues
-      console.log('📊 Using local storage data');
-      this.isFirebaseConnected = false;
-      this.dataSource = 'Local Storage';
-      this.loadLocalProgressData();
-
-    } catch (error) {
-      console.error('❌ Error loading progress data:', error);
-      this.isFirebaseConnected = false;
-      this.dataSource = 'Local Storage (Error)';
-      this.loadLocalProgressData();
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  async getGameSessionData() {
-    try {
-      // Use local storage data for now
-      const allSessions = this.getAllLocalGameSessionData();
-      const { start, end } = this.getDateRange();
-
-      // Filter sessions by date range
-      const filteredSessions = allSessions.filter((session: any) => {
-        // Handle both ISO string timestamps and numeric timestamps
-        let sessionDate: Date;
-        if (typeof session.timestamp === 'string') {
-          sessionDate = new Date(session.timestamp);
-        } else if (typeof session.timestamp === 'number') {
-          sessionDate = new Date(session.timestamp);
-        } else {
-          console.warn('Invalid timestamp format:', session.timestamp);
-          return false; // Skip this session
-        }
-
-        // Check if the date is valid
-        if (isNaN(sessionDate.getTime())) {
-          console.warn('Invalid date:', session.timestamp);
-          return false;
-        }
-
-        return sessionDate >= start && sessionDate <= end;
-      });
-
-      console.log(`📊 Date range: ${start.toISOString()} to ${end.toISOString()}`);
-      console.log(`📊 Filtered ${filteredSessions.length}/${allSessions.length} sessions for ${this.selectedPeriod}`);
-      if (filteredSessions.length > 0) {
-        console.log('📊 Sample filtered session dates:', filteredSessions.slice(0, 3).map((s: any) => new Date(s.timestamp).toISOString()));
-      }
-
-      // Special debugging for today
-      if (this.selectedPeriod === 'today') {
-        const todayString = new Date().toISOString().split('T')[0];
-        const todaySessions = allSessions.filter((s: any) => {
-          const sessionDate = new Date(s.timestamp).toISOString().split('T')[0];
-          return sessionDate === todayString;
-        });
-        console.log(`📊 Today (${todayString}) sessions found: ${todaySessions.length}`);
-        if (todaySessions.length > 0) {
-          console.log('📊 Today session details:', todaySessions.map((s: any) => ({
-            timestamp: s.timestamp,
-            date: new Date(s.timestamp).toISOString(),
-            correct: s.correctAnswers,
-            total: s.totalQuestions
-          })));
-        }
-      }
-      return filteredSessions;
-
-    } catch (error) {
-      console.error('Error loading game sessions:', error);
-      return this.getLocalGameSessionData();
-    }
-  }
-
-  getLocalGameSessionData() {
-    try {
-      const sessions = localStorage.getItem('gameSessions');
-      const allSessions = sessions ? JSON.parse(sessions) : [];
-
-      // Apply the same date filtering as Firebase data
-      const { start, end } = this.getDateRange();
-      const filteredSessions = allSessions.filter((session: any) => {
-        // Handle both ISO string timestamps and numeric timestamps
-        let sessionDate: Date;
-        if (typeof session.timestamp === 'string') {
-          sessionDate = new Date(session.timestamp);
-        } else if (typeof session.timestamp === 'number') {
-          sessionDate = new Date(session.timestamp);
-        } else {
-          console.warn('Invalid timestamp format:', session.timestamp);
-          return false; // Skip this session
-        }
-
-        // Check if the date is valid
-        if (isNaN(sessionDate.getTime())) {
-          console.warn('Invalid date:', session.timestamp);
-          return false;
-        }
-
-        return sessionDate >= start && sessionDate <= end;
-      });
-
-      console.log(`📊 Local data: Filtered ${filteredSessions.length}/${allSessions.length} sessions for ${this.selectedPeriod}`);
-      console.log(`📊 Local date range: ${start.toISOString()} to ${end.toISOString()}`);
-
-      if (filteredSessions.length > 0) {
-        console.log('📊 Sample local session dates:', filteredSessions.slice(0, 3).map((s: any) => new Date(s.timestamp).toISOString()));
-      }
-
-      return filteredSessions;
-    } catch (error) {
-      console.error('Error loading local game sessions:', error);
-      return [];
-    }
-  }
-
-  async migrateLocalDataToFirebase(localSessions: any[]) {
-    try {
-      console.log('Migrating local data to Firebase...');
-      for (const session of localSessions) {
-        await this.firebaseService.saveGameSession(session);
-      }
-      console.log('Migration completed successfully');
-    } catch (error) {
-      console.error('Error migrating data to Firebase:', error);
-    }
-  }
-
-
-
-  loadLocalProgressData() {
-    // For overall stats, we want ALL data regardless of period
-    const allGameData = this.getAllLocalGameSessionData();
-    this.calculateOverallStats(allGameData);
-    this.calculateCategoryStats(allGameData);
-    this.loadRecentSessions(allGameData);
-  }
-
-  getAllLocalGameSessionData() {
-    try {
-      const sessions = localStorage.getItem('gameSessions');
-      return sessions ? JSON.parse(sessions) : [];
-    } catch (error) {
-      console.error('Error loading all local game sessions:', error);
-      return [];
-    }
-  }
-
-  async saveProgressSummary() {
-    try {
-      const progressSummary = {
-        overallStats: this.overallStats,
-        categoryStats: this.categoryStats,
-        lastCalculated: new Date().toISOString()
-      };
+      this.isLoading = true;
       
-      await this.firebaseService.saveUserProgress(progressSummary);
+      // Always try Firebase first
+      try {
+        console.log('📊 Loading from Firebase...');
+        const sessions = await this.firebaseService.getUserGameSessions();
+        console.log(`📊 Found ${sessions.length} Firebase sessions`);
+        
+        if (sessions.length > 0) {
+          this.calculateOverallStats(sessions);
+          this.calculateCategoryStats(sessions);
+          this.loadRecentSessions(sessions);
+          this.dataSource = 'Firebase';
+          this.isFirebaseConnected = true;
+          this.isLoading = false;
+          return;
+        }
+      } catch (firebaseError) {
+        console.log('📊 Firebase not available, trying localStorage...');
+        this.isFirebaseConnected = false;
+      }
+      
+      // Fallback to localStorage
+      console.log('📊 Loading from localStorage...');
+      const localData = localStorage.getItem('gameSessions');
+      if (localData) {
+        const sessions = JSON.parse(localData);
+        console.log(`📊 Found ${sessions.length} localStorage sessions`);
+        
+        this.calculateOverallStats(sessions);
+        this.calculateCategoryStats(sessions);
+        this.loadRecentSessions(sessions);
+        this.dataSource = 'Local Storage';
+      } else {
+        console.log('📊 No progress data found - user needs to play games first');
+        this.dataSource = 'No Data';
+      }
+      
+      this.isLoading = false;
     } catch (error) {
-      console.error('Error saving progress summary:', error);
+      console.error('Error loading progress data:', error);
+      this.dataSource = 'Error';
+      this.isLoading = false;
     }
   }
 
   calculateOverallStats(sessions: any[]) {
     if (sessions.length === 0) {
-      this.overallStats = { accuracy: 0, avgTimePerCard: 0, totalCards: 0, skippedCards: 0 };
+      this.overallStats = {
+        accuracy: 0,
+        avgTimePerCard: 0,
+        totalCards: 0,
+        skippedCards: 0
+      };
       return;
     }
 
@@ -497,305 +245,211 @@ export class ProgressPage implements OnInit {
 
   async createChart() {
     if (!this.accuracyChart || !this.chartLoaded || !(window as any).Chart) {
-      console.log('Chart creation failed - missing requirements');
+      console.log('Chart creation skipped - missing requirements');
       return;
     }
 
-    const ctx = this.accuracyChart.nativeElement.getContext('2d');
-    const chartData = await this.getChartData();
+    try {
+      const ctx = this.accuracyChart.nativeElement.getContext('2d');
+      const chartData = await this.getChartData();
 
-    // Destroy existing chart if it exists
-    if (this.chart) {
-      this.chart.destroy();
-    }
+      // Destroy existing chart if it exists
+      if (this.chart) {
+        this.chart.destroy();
+      }
 
-    this.chart = new (window as any).Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: chartData.labels,
-        datasets: [{
-          label: 'Accuracy %',
-          data: chartData.data,
-          borderColor: '#667eea',
-          backgroundColor: 'rgba(102, 126, 234, 0.1)',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4,
-          pointBackgroundColor: '#667eea',
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2,
-          pointRadius: 6,
-          pointHoverRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              callback: function(value: any) {
-                return value + '%';
-              }
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
+      this.chart = new (window as any).Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
             }
           },
-          x: {
-            grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleColor: '#ffffff',
-            bodyColor: '#ffffff',
-            borderColor: '#667eea',
-            borderWidth: 1,
-            callbacks: {
-              label: function(context: any) {
-                if (context.parsed.y === 0) {
-                  return 'No quiz sessions for this date';
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value: any) {
+                  return value + '%';
                 }
-                return `Accuracy: ${context.parsed.y}%`;
               }
             }
-          }
-        },
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        },
-        elements: {
-          point: {
-            hoverRadius: 8
+          },
+          elements: {
+            line: {
+              tension: 0.4
+            }
           }
         }
-      }
-    });
-
-    console.log('📈 Chart created successfully');
+      });
+      
+      console.log('📈 Chart created successfully');
+    } catch (error) {
+      console.error('Error creating chart:', error);
+    }
   }
 
   async getChartData() {
     console.log(`📈 Getting chart data for period: ${this.selectedPeriod}`);
     console.log(`📈 Data source: ${this.dataSource}`);
-    console.log(`📈 Firebase connected: ${this.isFirebaseConnected}`);
+    console.log(`📈 Firebase connected: ${this.isFirebaseConnected}`);      
 
-    // Get sessions filtered by the selected period (same as stats)
-    const filteredSessions = await this.getGameSessionData();
-    console.log(`📈 Filtered sessions: ${filteredSessions.length}`);
+    try {
+      // Get filtered sessions based on selected period
+      const filteredSessions = await this.getGameSessionData();
+      
+      if (filteredSessions.length === 0) {
+        console.log('📈 No data for selected period');
+        this.hasDataForPeriod = false;
+        return {
+          labels: ['No Data'],
+          data: [0]
+        };
+      }
 
-    if (filteredSessions.length > 0) {
-      console.log(`📈 Sample session data:`, filteredSessions.slice(0, 2).map((s: any) => ({
-        timestamp: s.timestamp,
-        date: new Date(s.timestamp).toISOString(),
-        correct: s.correctAnswers,
-        total: s.totalQuestions
-      })));
+      console.log(`📈 Found ${filteredSessions.length} sessions for chart`);
+
+      // Generate date range and group data
+      const dateRange = this.getChartDateRange(filteredSessions);
+      const groupedData = this.groupSessionsByDate(filteredSessions);
+
+      const chartData = {
+        labels: dateRange.map(date => {
+          const d = new Date(date);
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }),
+        data: dateRange.map(date => {
+          const dayData = groupedData[date] || [];
+          if (dayData.length === 0) return 0;
+          
+          const totalCorrect = dayData.reduce((sum: number, session: any) => sum + session.correctAnswers, 0);
+          const totalQuestions = dayData.reduce((sum: number, session: any) => sum + session.totalQuestions, 0);
+          
+          return totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+        })
+      };
+
+      console.log('📈 Chart data generated:', chartData);
+      this.hasDataForPeriod = true;
+      return chartData;
+    } catch (error) {
+      console.error('Error generating chart data:', error);
+      return { labels: ['Error'], data: [0] };
     }
-
-    // Always get the appropriate date range, even if no data
-    const dateRange = this.getChartDateRange(filteredSessions);
-    console.log(`📈 Date range: ${dateRange}`);
-
-    if (dateRange.length === 0) {
-      console.log('📈 No date range, returning empty chart');
-      return { labels: [], data: [] };
-    }
-
-    // Group sessions by date
-    const groupedData = this.groupSessionsByDate(filteredSessions);
-    console.log(`📈 Grouped data keys: ${Object.keys(groupedData)}`);
-
-    const chartData = {
-      labels: dateRange.map(date => {
-        // Parse the date string properly to avoid timezone issues
-        const [year, month, day] = date.split('-').map(Number);
-        const d = new Date(year, month - 1, day); // month is 0-indexed
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      }),
-      data: dateRange.map(date => {
-        const sessions = groupedData[date];
-        if (!sessions || sessions.length === 0) {
-          console.log(`📈 ${date}: No sessions found - showing 0%`);
-          return 0; // Show 0% when no data for better visualization
-        }
-        const totalQuestions = sessions.reduce((sum: number, s: any) => sum + s.totalQuestions, 0);
-        const totalCorrect = sessions.reduce((sum: number, s: any) => sum + s.correctAnswers, 0);
-        const accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-        console.log(`📈 ${date}: ${totalCorrect}/${totalQuestions} = ${accuracy}%`);
-        return accuracy;
-      })
-    };
-
-    // Always show chart regardless of data availability
-    this.hasDataForPeriod = true;
-    console.log(`📈 Final chart data:`, chartData);
-    return chartData;
   }
-
-
 
   getChartDateRange(filteredSessions: any[]): string[] {
     const { start, end } = this.getDateRange();
     console.log(`📈 Date range for ${this.selectedPeriod}: ${start.toISOString()} to ${end.toISOString()}`);
-
-    // Group the filtered sessions to see what dates have data
+    
+    const dates: string[] = [];
     const groupedData = this.groupSessionsByDate(filteredSessions);
-    const hasDataDates = Object.keys(groupedData).sort((a, b) =>
-      new Date(a).getTime() - new Date(b).getTime()
-    );
-
+    
+    // Generate date labels based on period
     if (this.selectedPeriod === 'today') {
-      // Use local date to avoid timezone issues
-      const todayDate = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-      console.log(`📈 Today chart date: ${todayDate}`);
-      console.log(`📈 Start date object: ${start.toString()}`);
-      console.log(`📈 Sessions for today: ${hasDataDates.includes(todayDate) ? 'YES' : 'NO'}`);
-      return [todayDate];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dates.push(today.toISOString().split('T')[0]);
     } else if (this.selectedPeriod === 'week') {
-      // Show all 7 days of the week (from start to end)
-      const weekDates: string[] = [];
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
-        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        weekDates.push(dateStr);
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        dates.push(date.toISOString().split('T')[0]);
       }
-      console.log(`📈 Week dates: ${weekDates}`);
-      return weekDates;
     } else if (this.selectedPeriod === 'month') {
-      // Show all days of the current month (like week filter but for entire month)
-      const monthDates: string[] = [];
-      const current = new Date(start);
-      while (current <= end) {
-        const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-        monthDates.push(dateStr);
-        current.setDate(current.getDate() + 1);
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        dates.push(date.toISOString().split('T')[0]);
       }
-      console.log(`📈 Month dates: ${monthDates.length} days from ${monthDates[0]} to ${monthDates[monthDates.length - 1]}`);
-      return monthDates;
     } else if (this.selectedPeriod === 'custom') {
-      // For custom, show all dates in the range that have data, or the range itself if no data
-      if (hasDataDates.length > 0) {
-        return hasDataDates;
-      } else {
-        // Show the custom date range even if no data
-        const customDates: string[] = [];
-        const current = new Date(start);
-        while (current <= end) {
-          const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
-          customDates.push(dateStr);
-          current.setDate(current.getDate() + 1);
-        }
-        return customDates.slice(0, 31); // Limit to 31 days for performance
+      const startDate = new Date(this.customStartDate);
+      const endDate = new Date(this.customEndDate);
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
     } else if (this.selectedPeriod === 'all') {
-      // Show all dates that have data
-      return hasDataDates;
+      // Get all unique dates from sessions
+      const uniqueDates = [...new Set(filteredSessions.map(s => 
+        new Date(s.timestamp).toISOString().split('T')[0]
+      ))].sort();
+      dates.push(...uniqueDates);
     }
-
-    return hasDataDates;
+    
+    return dates;
   }
-
-
 
   groupSessionsByDate(sessions: any[]) {
     const grouped: { [key: string]: any[] } = {};
-
+    
     sessions.forEach(session => {
-      // Handle both ISO string timestamps and numeric timestamps
-      let sessionDate: Date;
-      if (typeof session.timestamp === 'string') {
-        sessionDate = new Date(session.timestamp);
-      } else if (typeof session.timestamp === 'number') {
-        sessionDate = new Date(session.timestamp);
-      } else {
-        console.warn('Invalid timestamp format:', session.timestamp);
-        return; // Skip this session
+      const date = new Date(session.timestamp).toISOString().split('T')[0];
+      if (!grouped[date]) {
+        grouped[date] = [];
       }
-
-      // Use a consistent date format for grouping
-      const dateKey = sessionDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(session);
+      grouped[date].push(session);
     });
-
+    
     return grouped;
   }
 
   async updateChart() {
     if (this.chart) {
-      console.log('📈 Updating chart for period:', this.selectedPeriod);
+      console.log('📈 Updating chart for period:', this.selectedPeriod);    
       const chartData = await this.getChartData();
-      console.log('📈 Chart data received:', chartData);
-
+      
       this.chart.data.labels = chartData.labels;
       this.chart.data.datasets[0].data = chartData.data;
       this.chart.update('active'); // Force animation update
-
-      console.log('📈 Chart updated successfully with', chartData.labels.length, 'data points');
-    } else {
-      console.warn('📈 Chart not initialized yet');
     }
   }
 
-  // Force refresh all data and chart (useful for debugging)
   async forceRefresh() {
-    console.log('🔄 Force refreshing all data...');
-
-    // Debug: Check what's in localStorage
-    const localData = localStorage.getItem('gameSessions');
-    if (localData) {
-      const sessions = JSON.parse(localData);
-      console.log(`🔍 LocalStorage has ${sessions.length} sessions:`);
-      sessions.forEach((s: any, i: number) => {
-        const sessionDate = new Date(s.timestamp);
-        console.log(`  ${i + 1}. ${sessionDate.toISOString()} (${sessionDate.toLocaleDateString()}) - ${s.correctAnswers}/${s.totalQuestions} (${s.category})`);
-      });
-
-      // Check today's date
-      const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
-      console.log(`🔍 Today is: ${todayString} (${today.toLocaleDateString()})`);
-
-      // Check for today's sessions
-      const todaySessions = sessions.filter((s: any) => {
-        const sessionDate = new Date(s.timestamp).toISOString().split('T')[0];
-        return sessionDate === todayString;
-      });
-      console.log(`🔍 Today's sessions: ${todaySessions.length}`);
-
-    } else {
-      console.log('🔍 No data in localStorage');
-    }
-
-    await this.loadProgressData();
-    this.generateInsights();
-    if (this.chart) {
-      await this.updateChart();
+    console.log('🔄 Force refreshing progress data...');
+    
+    try {
+      // Clear localStorage cache
+      localStorage.removeItem('gameSessions');
+      
+      // Reload from Firebase
+      const localData = localStorage.getItem('gameSessions');
+      if (localData) {
+        const sessions = JSON.parse(localData);
+        console.log(`🔄 Found ${sessions.length} cached sessions`);
+      }
+      
+      // Reload all data
+      await this.loadProgressData();
+      this.generateInsights();
+      
+      if (this.chart) {
+        await this.updateChart();
+      }
+      
+      console.log('✅ Progress data refreshed');
+    } catch (error) {
+      console.error('❌ Error refreshing progress data:', error);
     }
   }
 
   generateInsights() {
     this.insights = [];
 
-    // Accuracy insight
+    // Overall accuracy insight
     if (this.overallStats.accuracy >= 80) {
       this.insights.push({
-        icon: '🎉',
-        title: 'Excellent Performance!',
+        icon: '🎯',
+        title: 'Excellent Accuracy',
         message: `Great job! Your accuracy of ${this.overallStats.accuracy}% shows strong memory retention.`
       });
     } else if (this.overallStats.accuracy >= 60) {
@@ -804,11 +458,11 @@ export class ProgressPage implements OnInit {
         title: 'Good Progress',
         message: `You're doing well with ${this.overallStats.accuracy}% accuracy. Keep practicing!`
       });
-    } else {
+    } else if (this.overallStats.accuracy > 0) {
       this.insights.push({
         icon: '💪',
-        title: 'Room for Improvement',
-        message: 'Consider reviewing cards more frequently to improve recognition.'
+        title: 'Keep Practicing',
+        message: 'Practice makes perfect! Try focusing on accuracy over speed.'
       });
     }
 
@@ -822,16 +476,18 @@ export class ProgressPage implements OnInit {
     }
 
     // Category insight
-    const bestCategory = this.categoryStats.reduce((best, current) => 
-      current.accuracy > best.accuracy ? current : best
-    );
-    
-    if (bestCategory.accuracy > 0) {
-      this.insights.push({
-        icon: '🌟',
-        title: 'Strongest Category',
-        message: `You excel at ${bestCategory.name} with ${bestCategory.accuracy}% accuracy!`
-      });
+    if (this.categoryStats.length > 0) {
+      const bestCategory = this.categoryStats.reduce((best, current) => 
+        current.accuracy > best.accuracy ? current : best
+      );
+      
+      if (bestCategory.accuracy > 0) {
+        this.insights.push({
+          icon: '🌟',
+          title: 'Strongest Category',
+          message: `You excel at ${bestCategory.name} with ${bestCategory.accuracy}% accuracy!`
+        });
+      }
     }
   }
 
@@ -895,43 +551,88 @@ export class ProgressPage implements OnInit {
     }
   }
 
-  // Add this method for testing
-  async testFirebaseConnection() {
+
+  getDateRange() {
+    const now = new Date();
+    let start: Date, end: Date;
+
+    switch (this.selectedPeriod) {
+      case 'today':
+        start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'week':
+        start = new Date(now);
+        start.setDate(start.getDate() - 6);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'month':
+        start = new Date(now);
+        start.setDate(start.getDate() - 29);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+        break;
+      case 'custom':
+        start = new Date(this.customStartDate);
+        end = new Date(this.customEndDate);
+        break;
+      case 'all':
+        start = new Date(0);
+        end = new Date();
+        break;
+      default:
+        start = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
+    }
+
+    return { start, end };
+  }
+
+  async getGameSessionData() {
     try {
-      console.log('🧪 Testing Firebase connection...');
-      
-      // Test saving a session
-      const testSession = {
-        category: 'test',
-        totalQuestions: 1,
-        correctAnswers: 1,
-        totalTime: 10,
-        skipped: 0,
-        timestamp: Date.now()
-      };
-      
-      await this.firebaseService.saveGameSession(testSession);
-      console.log('✅ Test session saved to Firebase');
-      
-      // Test loading sessions
-      const sessions = await this.firebaseService.getUserGameSessions();
-      console.log('✅ Sessions loaded from Firebase:', sessions.length);
-      
-      alert('Firebase connection test successful! Check console for details.');
-      
+      if (this.isFirebaseConnected) {
+        const allSessions = await this.firebaseService.getUserGameSessions();
+        return this.filterSessionsByPeriod(allSessions);
+      } else {
+        const localData = localStorage.getItem('gameSessions');
+        if (localData) {
+          const sessions = JSON.parse(localData);
+          return this.filterSessionsByPeriod(sessions);
+        }
+      }
     } catch (error) {
-      console.error('❌ Firebase test failed:', error);
-      alert('Firebase connection test failed! Check console for details.');
+      console.error('Error getting game session data:', error);
+    }
+    return [];
+  }
+
+  filterSessionsByPeriod(sessions: any[]) {
+    const { start, end } = this.getDateRange();
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.timestamp);
+      return sessionDate >= start && sessionDate <= end;
+    });
+  }
+
+  onPeriodChange() {
+    this.updateChart();
+  }
+
+  onCustomDateChange() {
+    if (this.customStartDate && this.customEndDate) {
+      this.updateChart();
     }
   }
+
+  togglePatientMode() {
+    this.isPatientMode = !this.isPatientMode;
+    console.log('Patient mode toggled:', this.isPatientMode);
+  }
 }
-
-
-
-
-
-
-
-
-
-

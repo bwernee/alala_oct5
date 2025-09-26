@@ -40,7 +40,7 @@
             class="profile-icon"
             style="width:72px;height:72px;border-radius:50%;overflow:hidden;background:#ffffff;">
             <img
-              [src]="userData.photo || 'assets/images/profile-placeholder.png'"
+              [src]="userData.photo"
               alt="Profile"
               style="width:100%;height:100%;object-fit:cover;display:block;" />
           </ion-avatar>
@@ -354,7 +354,7 @@
           <ion-icon name="trash-outline" slot="start" color="warning"></ion-icon>
           <ion-label>
             <h3>Clear All Data</h3>
-            <p>Remove all flashcards and game progress</p>
+            <p>Remove all game progress</p>
           </ion-label>
         </ion-item>
 

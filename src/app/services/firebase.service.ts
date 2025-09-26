@@ -12,6 +12,27 @@ interface UserData {
   name?: string;
   photo?: string;
   lastLoginAt?: string;
+  role?: 'patient' | 'caregiver' | 'standard';
+  patientInfo?: {
+    name: string;
+    dateOfBirth?: string;
+    medicalId?: string;
+    notes?: string;
+  };
+  caregiverInfo?: {
+    name: string;
+    relationship?: string;
+    contactPhone?: string;
+    notes?: string;
+  };
+}
+
+interface CategoryMatchSession {
+  id: string;
+  timestamp: string;
+  correct: number;
+  total: number;
+  accuracy: number;
 }
 
 interface UserProgress {
@@ -28,6 +49,11 @@ interface UserProgress {
     cardsPlayed: number;
     avgTime: number;
   }[];
+  categoryMatch: {
+    sessions: { [sessionId: string]: CategoryMatchSession };
+    totalSessions: number;
+    overallAccuracy: number;
+  };
   lastCalculated: string;
 }
 
@@ -103,7 +129,7 @@ export class FirebaseService {
 
     await setDoc(doc(this.firestore, 'users', uid), userData);
 
-    // Initialize user progress document
+    // Initialize user progress document with completely empty data
     const initialProgress: UserProgress = {
       overallStats: {
         accuracy: 0,
@@ -111,13 +137,12 @@ export class FirebaseService {
         totalCards: 0,
         skippedCards: 0
       },
-      categoryStats: [
-        { name: 'People', icon: '👨‍👩‍👧‍👦', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
-        { name: 'Places', icon: '🏠', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
-        { name: 'Objects', icon: '📱', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
-        { name: 'Photo Memories', icon: '📸', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
-        { name: 'Video Memories', icon: '🎥', accuracy: 0, cardsPlayed: 0, avgTime: 0 }
-      ],
+      categoryStats: [], // Empty - no pre-populated categories
+      categoryMatch: {
+        sessions: {}, // Empty - no sessions until user plays
+        totalSessions: 0,
+        overallAccuracy: 0
+      },
       lastCalculated: new Date().toISOString()
     };
 
@@ -138,6 +163,90 @@ export class FirebaseService {
     const docRef = doc(this.firestore, 'users', uid);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() : null;
+  }
+
+  // ===== PATIENT & CAREGIVER PROFILE MANAGEMENT =====
+
+  /**
+   * Update user role and profile information
+   */
+  async updateUserProfile(profileData: {
+    role?: 'patient' | 'caregiver' | 'standard';
+    patientInfo?: {
+      name: string;
+      dateOfBirth?: string;
+      medicalId?: string;
+      notes?: string;
+    };
+    caregiverInfo?: {
+      name: string;
+      relationship?: string;
+      contactPhone?: string;
+      notes?: string;
+    };
+  }): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const updates: Partial<UserData> = {
+      ...profileData,
+      lastLoginAt: new Date().toISOString()
+    };
+
+    await updateDoc(doc(this.firestore, 'users', user.uid), updates);
+  }
+
+  /**
+   * Get user profile with role-specific information
+   */
+  async getUserProfile(uid?: string): Promise<UserData | null> {
+    const user = this.getCurrentUser();
+    const targetUid = uid || user?.uid;
+
+    if (!targetUid) throw new Error('User not authenticated');
+
+    const docRef = doc(this.firestore, 'users', targetUid);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() as UserData : null;
+  }
+
+  /**
+   * Set user as patient with patient information
+   */
+  async setAsPatient(patientInfo: {
+    name: string;
+    dateOfBirth?: string;
+    medicalId?: string;
+    notes?: string;
+  }): Promise<void> {
+    await this.updateUserProfile({
+      role: 'patient',
+      patientInfo
+    });
+  }
+
+  /**
+   * Set user as caregiver with caregiver information
+   */
+  async setAsCaregiver(caregiverInfo: {
+    name: string;
+    relationship?: string;
+    contactPhone?: string;
+    notes?: string;
+  }): Promise<void> {
+    await this.updateUserProfile({
+      role: 'caregiver',
+      caregiverInfo
+    });
+  }
+
+  /**
+   * Set user as standard user (no special role)
+   */
+  async setAsStandard(): Promise<void> {
+    await this.updateUserProfile({
+      role: 'standard'
+    });
   }
 
   // Progress tracking methods
@@ -198,6 +307,136 @@ export class FirebaseService {
     const docRef = doc(this.firestore, 'users', targetUserId, 'userProgress', 'stats');
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() as UserProgress : null;
+  }
+
+  // ===== CATEGORY MATCH PROGRESS TRACKING =====
+
+  /**
+   * Save a Category Match session with automatic accuracy calculation
+   */
+  async saveCategoryMatchSession(correct: number, total: number): Promise<string> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    if (total <= 0) throw new Error('Total answers must be greater than 0');
+    if (correct < 0 || correct > total) throw new Error('Correct answers must be between 0 and total');
+
+    const accuracy = total > 0 ? correct / total : 0;
+    const sessionId = `cm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    
+    const session: CategoryMatchSession = {
+      id: sessionId,
+      timestamp: new Date().toISOString(),
+      correct,
+      total,
+      accuracy
+    };
+
+    // Get current progress
+    const currentProgress = await this.getUserProgress();
+    if (!currentProgress) throw new Error('User progress not found');
+
+    // Update the sessions object
+    const updatedSessions = {
+      ...currentProgress.categoryMatch.sessions,
+      [sessionId]: session
+    };
+
+    // Calculate new overall accuracy
+    const allSessions = Object.values(updatedSessions);
+    const totalCorrect = allSessions.reduce((sum, s) => sum + s.correct, 0);
+    const totalAnswers = allSessions.reduce((sum, s) => sum + s.total, 0);
+    const overallAccuracy = totalAnswers > 0 ? totalCorrect / totalAnswers : 0;
+
+    // Update progress with new session
+    const updatedProgress: Partial<UserProgress> = {
+      categoryMatch: {
+        sessions: updatedSessions,
+        totalSessions: allSessions.length,
+        overallAccuracy
+      },
+      lastCalculated: new Date().toISOString()
+    };
+
+    await this.saveUserProgress(updatedProgress);
+    return sessionId;
+  }
+
+  /**
+   * Get all Category Match sessions for a user
+   */
+  async getCategoryMatchSessions(userId?: string): Promise<CategoryMatchSession[]> {
+    const user = this.getCurrentUser();
+    const targetUserId = userId || user?.uid;
+
+    if (!targetUserId) throw new Error('User not authenticated');
+
+    const progress = await this.getUserProgress(targetUserId);
+    if (!progress || !progress.categoryMatch) return [];
+
+    return Object.values(progress.categoryMatch.sessions).sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }
+
+  /**
+   * Get Category Match progress summary for a user
+   */
+  async getCategoryMatchProgress(userId?: string): Promise<{
+    totalSessions: number;
+    overallAccuracy: number;
+    recentSessions: CategoryMatchSession[];
+  } | null> {
+    const user = this.getCurrentUser();
+    const targetUserId = userId || user?.uid;
+
+    if (!targetUserId) throw new Error('User not authenticated');
+
+    const progress = await this.getUserProgress(targetUserId);
+    if (!progress || !progress.categoryMatch) return null;
+
+    const sessions = Object.values(progress.categoryMatch.sessions).sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    return {
+      totalSessions: progress.categoryMatch.totalSessions,
+      overallAccuracy: progress.categoryMatch.overallAccuracy,
+      recentSessions: sessions.slice(0, 10) // Last 10 sessions
+    };
+  }
+
+  /**
+   * Delete a specific Category Match session
+   */
+  async deleteCategoryMatchSession(sessionId: string): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const currentProgress = await this.getUserProgress();
+    if (!currentProgress || !currentProgress.categoryMatch) throw new Error('User progress not found');
+
+    // Remove the session
+    const updatedSessions = { ...currentProgress.categoryMatch.sessions };
+    delete updatedSessions[sessionId];
+
+    // Recalculate overall accuracy
+    const allSessions = Object.values(updatedSessions);
+    const totalCorrect = allSessions.reduce((sum, s) => sum + s.correct, 0);
+    const totalAnswers = allSessions.reduce((sum, s) => sum + s.total, 0);
+    const overallAccuracy = totalAnswers > 0 ? totalCorrect / totalAnswers : 0;
+
+    // Update progress
+    const updatedProgress: Partial<UserProgress> = {
+      categoryMatch: {
+        sessions: updatedSessions,
+        totalSessions: allSessions.length,
+        overallAccuracy
+      },
+      lastCalculated: new Date().toISOString()
+    };
+
+    await this.saveUserProgress(updatedProgress);
   }
 
   // ===== USER GALLERY MANAGEMENT =====
@@ -497,8 +736,8 @@ export class FirebaseService {
     const sessionsSnapshot = await getDocs(sessionsQuery);
     sessionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
 
-    // Delete user progress
-    batch.delete(doc(this.firestore, 'userProgress', user.uid));
+    // Delete user progress (includes Category Match sessions)
+    batch.delete(doc(this.firestore, 'users', user.uid, 'userProgress', 'stats'));
 
     // Delete user profile
     batch.delete(doc(this.firestore, 'users', user.uid));

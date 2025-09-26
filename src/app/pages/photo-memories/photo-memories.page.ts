@@ -60,6 +60,11 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
   cards: UnifiedCard[] = [];
   idx = -1;
 
+  // Gallery functionality
+  showDetailModal = false;
+  selectedCard: UnifiedCard | null = null;
+  selectedIndex = -1;
+
   // Audio/timeline
   private audio?: HTMLAudioElement;
   isPlaying = false;
@@ -108,7 +113,7 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
   get currentCard(): UnifiedCard | null { return this.hasCard ? this.cards[this.idx] : null; }
 
   imgSrc(card: UnifiedCard | null): string {
-    return card?.image || 'assets/img/placeholder.png';
+    return card?.image || '';
   }
 
   // ===== Load & normalize: Builtins + Custom Categories =====
@@ -343,6 +348,82 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
         this.stopAudio();
       } else if (this.idx >= this.cards.length) {
         this.idx = 0;
+      }
+
+      await this.toast('Memory deleted', 'success');
+    } catch {
+      await this.toast('Delete failed', 'danger');
+    }
+  }
+
+  // ===== Gallery functionality =====
+  openDetailView(card: UnifiedCard, index: number) {
+    this.selectedCard = card;
+    this.selectedIndex = index;
+    this.showDetailModal = true;
+    
+    // Set the current card for audio functionality
+    this.idx = index;
+  }
+
+  closeDetailView() {
+    this.showDetailModal = false;
+    this.selectedCard = null;
+    this.selectedIndex = -1;
+    this.stopAudio();
+  }
+
+  async deleteCard(card: UnifiedCard) {
+    if (this.isPatientMode) return;
+
+    const alert = await this.alertCtrl.create({
+      header: 'Delete Memory',
+      message: `Remove "${card.label}" from its category?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Delete', role: 'destructive', handler: () => this.performDeleteCard(card) }
+      ]
+    });
+    await alert.present();
+  }
+
+  private async performDeleteCard(card: UnifiedCard) {
+    try {
+      if (card.origin.kind === 'builtin') {
+        // Remove from people/places/objects
+        const raw = localStorage.getItem(card.origin.key);
+        if (raw) {
+          const arr = JSON.parse(raw) as RawCard[];
+          const i = arr.findIndex(x =>
+            (x.id && x.id === card.id) ||
+            ((x.label || x.name) === card.label &&
+             (x.image || x.photo || x.photoUrl || x.imagePath) === card.image)
+          );
+          if (i >= 0) {
+            arr.splice(i, 1);
+            localStorage.setItem(card.origin.key, JSON.stringify(arr));
+          }
+        }
+      } else {
+        // Remove from a custom category list
+        const customId = card.origin.customId;
+        const list = this.readCustomCards(customId);
+        const idx = list.findIndex(x => x.id === card.id);
+        if (idx >= 0) {
+          list.splice(idx, 1);
+          this.saveCustomCards(customId, list);
+        }
+      }
+
+      // Update in-memory list
+      const cardIndex = this.cards.findIndex(c => c.id === card.id);
+      if (cardIndex >= 0) {
+        this.cards.splice(cardIndex, 1);
+      }
+
+      // Close detail view if this was the selected card
+      if (this.selectedCard && this.selectedCard.id === card.id) {
+        this.closeDetailView();
       }
 
       await this.toast('Memory deleted', 'success');

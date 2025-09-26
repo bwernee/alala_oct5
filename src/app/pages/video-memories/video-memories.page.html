@@ -47,91 +47,136 @@
     </div>
   </div>
 
-  <!-- Reels (infinite / circular) -->
-  <div class="reels-container" *ngIf="videos.length > 0" #reels (scroll)="onReelsScroll()">
-    <div class="reel" *ngFor="let v of displayVideos; index as i" [attr.data-index]="i">
-
-      <!-- Delete “×” (hidden in Patient Mode) -->
-      <button class="delete-chip" *ngIf="!isPatientMode" (click)="deleteVideo(i)" aria-label="Delete video">×</button>
-
-      <!-- Video -->
-      <video
-        #vidRef
-        class="reel-video"
-        [src]="v.src"
-        [poster]="v.poster || ''"
-        preload="metadata"
-        muted
-        playsinline
-        loop
-        (loadedmetadata)="onLoadedMeta(i)"
-        (timeupdate)="onTimeUpdate(i)"
-        (click)="onVideoTap(i)">
-      </video>
-
-      <!-- Overlay -->
-      <div class="reel-overlay">
-        <div class="reel-meta">
-          <!-- Title row: view vs edit -->
-          <div class="reel-title-row">
-            <!-- VIEW MODE -->
-            <ng-container *ngIf="editingIndex !== realIndex(i); else editField">
-              <div class="reel-title"
-                   [class.expanded]="isTitleExpanded(i)"
-                   (click)="onTitleTap(i)"
-                   title="Tap to {{ isTitleExpanded(i) ? 'collapse' : 'expand' }}">
-                   {{ (videos[realIndex(i)]?.label || 'Video memory') }}
-              </div>
-              <ion-button *ngIf="!isPatientMode" class="edit-title-btn" fill="clear" size="small" (click)="startEdit(i)" aria-label="Edit title">
-                <ion-icon name="create-outline"></ion-icon>
-              </ion-button>
-            </ng-container>
-
-            <!-- EDIT MODE -->
-            <ng-template #editField>
-              <ion-input
-                class="title-input"
-                [value]="editLabel"
-                [autofocus]="true"
-                (ionInput)="onEditLabelInput($event)"
-                (keydown.enter)="saveEdit(realIndex(i))"
-                (keydown.escape)="cancelEdit()"
-                (ionBlur)="onInputBlur(realIndex(i))">
-              </ion-input>
-              <ion-button fill="clear" size="small" (click)="saveEdit(realIndex(i))" aria-label="Save title">
-                <ion-icon name="checkmark-outline"></ion-icon>
-              </ion-button>
-              <ion-button fill="clear" size="small" (mousedown)="onCancelMouseDown()" (click)="cancelEdit()" aria-label="Cancel edit">
-                <ion-icon name="close-outline"></ion-icon>
-              </ion-button>
-            </ng-template>
+  <!-- Gallery Grid View -->
+  <div class="gallery-container" *ngIf="videos.length > 0">
+    <div class="gallery-grid">
+      <div 
+        class="gallery-item" 
+        *ngFor="let video of videos; let i = index"
+        (click)="openDetailView(video, i)">
+        <div class="gallery-video-container">
+          <video
+            class="gallery-video"
+            [src]="video.src"
+            [poster]="video.poster || ''"
+            preload="metadata"
+            muted
+            playsinline
+            loop>
+          </video>
+          <div class="gallery-overlay">
+            <div class="gallery-label">{{ video.label || 'Video memory' }}</div>
+            <div class="gallery-date">{{ video.createdAt | date:'short' }}</div>
+            <div class="gallery-play-button">
+              <ion-icon name="play"></ion-icon>
+            </div>
           </div>
-
-          <div class="reel-time">{{ videos[realIndex(i)]?.createdAt | date:'mediumDate' }}</div>
-        </div>
-      </div>
-
-      <!-- Bottom controls -->
-      <div class="reel-controls">
-        <ion-button fill="clear" class="play-toggle" (click)="onVideoTap(i)" aria-label="Play/Pause">
-          <ion-icon [name]="isPlaying(i) ? 'pause' : 'play'"></ion-icon>
-        </ion-button>
-
-        <ion-range
-          class="reel-range"
-          [value]="progress[realIndex(i)]?.current ?? 0"
-          [max]="progress[realIndex(i)]?.duration ?? 0"
-          (ionChange)="onSeek($event, i)"
-          [disabled]="!(progress[realIndex(i)] && progress[realIndex(i)].duration > 0)">
-        </ion-range>
-
-        <div class="time-readout">
-          {{ formatTime(progress[realIndex(i)]?.current || 0) }} /
-          {{ formatTime(progress[realIndex(i)]?.duration || 0) }}
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Detail View Modal -->
+  <ion-modal [isOpen]="showDetailModal" (didDismiss)="closeDetailView()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ selectedVideo?.label || 'Video Memory' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeDetailView()">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content *ngIf="selectedVideo">
+        <div class="detail-container">
+          <div class="detail-video-container">
+            <video
+              #detailVideoRef
+              class="detail-video"
+              [src]="selectedVideo.src"
+              [poster]="selectedVideo.poster || ''"
+              preload="metadata"
+              (loadedmetadata)="onDetailVideoLoaded()"
+              (timeupdate)="onDetailVideoTimeUpdate()"
+              (click)="toggleDetailVideoPlay()">
+            </video>
+          </div>
+          <div class="detail-info">
+            <h2>{{ selectedVideo.label || 'Video Memory' }}</h2>
+            <p class="detail-date">
+              Added: {{ selectedVideo.createdAt | date:'medium' }}
+            </p>
+            
+            <!-- Video Controls -->
+            <div class="detail-controls">
+              <ion-button 
+                shape="round" 
+                fill="solid" 
+                color="primary"
+                (click)="toggleDetailVideoPlay()">
+                <ion-icon [name]="isDetailVideoPlaying ? 'pause' : 'play'"></ion-icon>
+              </ion-button>
+              <div class="video-timeline">
+                <ion-range
+                  [min]="0"
+                  [max]="detailVideoDuration || 0"
+                  [value]="detailVideoCurrent"
+                  (ionChange)="onDetailVideoSeek($event)"
+                  snaps="true"
+                  pin="true">
+                </ion-range>
+                <div class="time-display">
+                  {{ formatTime(detailVideoCurrent) }} / {{ formatTime(detailVideoDuration) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Edit Title (only in standard/caregiver mode) -->
+            <div class="detail-edit" *ngIf="!isPatientMode">
+              <h3>Edit Title</h3>
+              <ion-input
+                [value]="editLabel"
+                placeholder="Enter video title"
+                (ionInput)="onEditLabelInput($event)"
+                (keydown.enter)="saveEdit(selectedVideoIndex)"
+                (keydown.escape)="cancelEdit()">
+              </ion-input>
+              <div class="edit-buttons">
+                <ion-button 
+                  fill="outline" 
+                  size="small"
+                  (click)="saveEdit(selectedVideoIndex)">
+                  <ion-icon name="checkmark" slot="start"></ion-icon>
+                  Save
+                </ion-button>
+                <ion-button 
+                  fill="outline" 
+                  size="small"
+                  color="medium"
+                  (click)="cancelEdit()">
+                  <ion-icon name="close" slot="start"></ion-icon>
+                  Cancel
+                </ion-button>
+              </div>
+            </div>
+
+            <!-- Delete Button (only in standard/caregiver mode) -->
+            <div class="detail-actions" *ngIf="!isPatientMode">
+              <ion-button 
+                color="danger" 
+                fill="outline" 
+                (click)="deleteVideoFromGallery(selectedVideoIndex)">
+                <ion-icon name="trash" slot="start"></ion-icon>
+                Delete Video
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 
   <!-- Hidden inputs for camera / gallery -->
   <input
