@@ -72,6 +72,10 @@ const routes: Routes = [
     path: 'video-memories',
     loadChildren: () => import('./pages/video-memories/video-memories.module').then( m => m.VideoMemoriesPageModule)
   },
+  {
+    path: 'add-flashcard',
+    loadChildren: () => import('./add-flashcard/add-flashcard.module').then( m => m.AddFlashcardPageModule)
+  },
   { path: 'category/:id', loadChildren: () => import('./pages/custom-category/custom-category.module').then(m => m.CustomCategoryModule) },
   {
     path: 'options',

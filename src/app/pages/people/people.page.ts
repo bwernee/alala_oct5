@@ -78,12 +78,16 @@ export class PeoplePage implements OnInit, OnDestroy {
   }
 
   // ===== Data IO =====
+  private storageKey(): string {
+    const uid = localStorage.getItem('userId') || 'anon';
+    return `peopleCards_${uid}`;
+  }
   private getCards(): PeopleCard[] {
-    try { return JSON.parse(localStorage.getItem('peopleCards') || '[]'); }
+    try { return JSON.parse(localStorage.getItem(this.storageKey()) || '[]'); }
     catch { return []; }
   }
   private saveCards(cards: PeopleCard[]) {
-    localStorage.setItem('peopleCards', JSON.stringify(cards));
+    localStorage.setItem(this.storageKey(), JSON.stringify(cards));
   }
 
   // ===== Card navigation =====

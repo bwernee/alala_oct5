@@ -135,7 +135,9 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
   }
 
   private readBuiltin(key: 'peopleCards' | 'placesCards' | 'objectsCards', cat: BuiltinCategory): UnifiedCard[] {
-    const raw = localStorage.getItem(key);
+    const uid = localStorage.getItem('userId') || 'anon';
+    const scopedKey = `${key}_${uid}`;
+    const raw = localStorage.getItem(scopedKey);
     if (!raw) return [];
     try {
       const arr = JSON.parse(raw) as RawCard[];

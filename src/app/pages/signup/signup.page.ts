@@ -53,11 +53,23 @@ export class SignupPage {
       localStorage.setItem('userEmail', this.email);
       localStorage.setItem('userId', user.uid);
 
-      this.router.navigate(['/home']);
+      // Ensure no default data exists for new accounts
+      try {
+        ['peopleCards','placesCards','objectsCards'].forEach(k => localStorage.removeItem(k));
+        ['peopleCards_'+user.uid,'placesCards_'+user.uid,'objectsCards_'+user.uid].forEach(k => localStorage.removeItem(k));
+      } catch {}
+
+      // Redirect to login after registration as caregiver
+      this.router.navigate(['/login']);
       
     } catch (error: any) {
       console.error('Signup error:', error);
-      alert(error.message || 'Signup failed. Please try again.');
+      const code = error?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        alert('This email is already in use. Please log in or use another email.');
+      } else {
+        alert(error.message || 'Signup failed. Please try again.');
+      }
     } finally {
       this.isLoading = false;
     }

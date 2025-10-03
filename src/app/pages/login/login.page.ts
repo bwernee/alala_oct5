@@ -40,6 +40,11 @@ export class LoginPage {
         localStorage.setItem('userData', JSON.stringify(userData));
       }
 
+      // Clear any legacy global flashcard keys to enforce zero default data and per-UID isolation
+      try {
+        ['peopleCards','placesCards','objectsCards'].forEach(k => localStorage.removeItem(k));
+      } catch {}
+
       this.router.navigate(['/home']);
       
     } catch (error: any) {

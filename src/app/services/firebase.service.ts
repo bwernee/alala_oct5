@@ -13,8 +13,12 @@ interface UserData {
   photo?: string;
   lastLoginAt?: string;
   role?: 'patient' | 'caregiver' | 'standard';
+  securityCode?: string;
   patientInfo?: {
     name: string;
+    age?: number;
+    gender?: string;
+    condition?: string;
     dateOfBirth?: string;
     medicalId?: string;
     notes?: string;
@@ -22,6 +26,7 @@ interface UserData {
   caregiverInfo?: {
     name: string;
     relationship?: string;
+    contactEmail?: string;
     contactPhone?: string;
     notes?: string;
   };
@@ -116,39 +121,141 @@ export class FirebaseService {
     return userCredential.user;
   }
 
-  async signup(email: string, password: string, name?: string): Promise<User> {
+  async signup(
+    email: string,
+    password: string,
+    name?: string,
+    patientInfo?: {
+      name: string;
+      age?: number;
+      gender?: string;
+      condition?: string;
+      dateOfBirth?: string;
+      medicalId?: string;
+      notes?: string;
+    },
+    caregiverInfo?: {
+      name: string;
+      relationship?: string;
+      contactEmail?: string;
+      contactPhone?: string;
+      notes?: string;
+    }
+  ): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
     const uid = userCredential.user.uid;
 
-    // Create user document with profile data
+    // Generate a unique security code for this account
+    const securityCode = await this.generateUniqueSecurityCode();
+
+    // Create user document with profile data (no default data for games/videos/flashcards)
     const userData: UserData = {
       email: email,
       createdAt: new Date().toISOString(),
-      ...(name && { name })
+      ...(name && { name }),
+      role: 'standard',
+      securityCode,
+      // Store provided profiles; avoid undefined writes
+      patientInfo: patientInfo ? this.sanitizeForFirestore(patientInfo) as any : undefined,
+      caregiverInfo: caregiverInfo ? this.sanitizeForFirestore(caregiverInfo) as any : undefined
     };
 
-    await setDoc(doc(this.firestore, 'users', uid), userData);
-
-    // Initialize user progress document with completely empty data
-    const initialProgress: UserProgress = {
-      overallStats: {
-        accuracy: 0,
-        avgTimePerCard: 0,
-        totalCards: 0,
-        skippedCards: 0
-      },
-      categoryStats: [], // Empty - no pre-populated categories
-      categoryMatch: {
-        sessions: {}, // Empty - no sessions until user plays
-        totalSessions: 0,
-        overallAccuracy: 0
-      },
-      lastCalculated: new Date().toISOString()
-    };
-
-    await setDoc(doc(this.firestore, 'users', uid, 'userProgress', 'stats'), initialProgress);
+    await setDoc(doc(this.firestore, 'users', uid), this.sanitizeForFirestore(userData));
 
     return userCredential.user;
+  }
+
+  /**
+   * Create a flashcard under users/{uid}/flashcards and auto-create activity entries.
+   * Only allowed for caregivers/standard (not patient mode).
+   */
+  async createFlashcard(card: Omit<UserCard, 'id' | 'userId' | 'createdAt'> & { type: 'photo' | 'video' | 'manual' }): Promise<string> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // role check (patient cannot create)
+    const profile = await this.getUserProfile(user.uid);
+    if (profile?.role === 'patient') {
+      throw new Error('Patients cannot create content');
+    }
+
+    const cardId = `card_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const data: any = this.sanitizeForFirestore({
+      id: cardId,
+      userId: user.uid,
+      createdAt: Date.now(),
+      ...card
+    });
+
+    await setDoc(doc(this.firestore, 'users', user.uid, 'flashcards', cardId), data);
+
+    // Auto-create activity entries for games referencing this card
+    const activities = [
+      { id: `nameThatMemory_${cardId}`, type: 'nameThatMemory', cardId },
+      { id: `categoryMatch_${cardId}`, type: 'categoryMatch', cardId }
+    ];
+
+    for (const a of activities) {
+      const activityDoc = doc(this.firestore, 'users', user.uid, 'activities', a.id);
+      await setDoc(activityDoc, this.sanitizeForFirestore({
+        id: a.id,
+        type: a.type,
+        cardId: a.cardId,
+        createdAt: Date.now()
+      }));
+    }
+
+    return cardId;
+  }
+
+  /**
+   * Append a progress entry under users/{uid}/activities/{activityId}/progress
+   */
+  async addActivityProgress(activityId: string, progress: { correct: number; total: number; durationSec?: number; timestamp?: number }): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const p = this.sanitizeForFirestore({
+      correct: Number(progress.correct) || 0,
+      total: Number(progress.total) || 0,
+      durationSec: progress.durationSec ?? null,
+      timestamp: progress.timestamp ?? Date.now(),
+      accuracy: (Number(progress.total) > 0) ? Number(progress.correct) / Number(progress.total) : 0
+    });
+
+    const id = `p_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+    await setDoc(doc(this.firestore, 'users', user.uid, 'activities', activityId, 'progress', id), p);
+  }
+
+  /** Prevent undefined from being written to Firestore (convert to null or remove) */
+  private sanitizeForFirestore<T extends Record<string, any>>(obj: T): T {
+    const out: any = {};
+    Object.keys(obj || {}).forEach(k => {
+      const v = (obj as any)[k];
+      if (v === undefined) return; // skip undefined entries
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        out[k] = this.sanitizeForFirestore(v);
+      } else {
+        out[k] = v === undefined ? null : v;
+      }
+    });
+    return out;
+  }
+
+  private async generateUniqueSecurityCode(): Promise<string> {
+    // 8-character uppercase alphanumeric code (e.g., 4G8K2MPL)
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const length = 8;
+    const generate = () => Array.from({ length }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+
+    // Ensure uniqueness across all users by querying the users collection
+    while (true) {
+      const candidate = generate();
+      const q = query(collection(this.firestore, 'users'), where('securityCode', '==', candidate));
+      const snap = await getDocs(q);
+      if (snap.empty) return candidate;
+      // else loop and try again
+    }
   }
 
   async logout(): Promise<void> {

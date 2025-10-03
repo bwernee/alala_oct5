@@ -77,12 +77,16 @@ export class PlacesPage implements OnInit, OnDestroy {
   }
 
   // ===== Data IO (Places only) =====
+  private storageKey(): string {
+    const uid = localStorage.getItem('userId') || 'anon';
+    return `placesCards_${uid}`;
+  }
   private getCards(): PlaceCard[] {
-    try { return JSON.parse(localStorage.getItem('placesCards') || '[]'); }
+    try { return JSON.parse(localStorage.getItem(this.storageKey()) || '[]'); }
     catch { return []; }
   }
   private saveCards(cards: PlaceCard[]) {
-    localStorage.setItem('placesCards', JSON.stringify(cards));
+    localStorage.setItem(this.storageKey(), JSON.stringify(cards));
   }
 
   // ===== Card navigation =====

@@ -10,8 +10,11 @@
     <!-- Title (center) -->
     <ion-title class="app-title">ALALA</ion-title>
 
-    <!-- Settings button (right) -->
+    <!-- Settings + Add button (right) -->
     <ion-buttons slot="end">
+      <ion-button class="icon-btn settings-btn" fill="clear" routerLink="/add-flashcard" *ngIf="!isPatientMode">
+        <ion-icon name="add-circle-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

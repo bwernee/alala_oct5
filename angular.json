@@ -18,6 +18,10 @@
             "main": "src/main.ts",
             "polyfills": "src/polyfills.ts",
             "tsConfig": "tsconfig.app.json",
+            "allowedCommonJsDependencies": [
+              "get-blob-duration",
+              "qrcode"
+            ],
             "inlineStyleLanguage": "scss",
             "assets": [
               {

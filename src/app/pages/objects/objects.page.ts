@@ -77,12 +77,16 @@ export class ObjectsPage implements OnInit, OnDestroy {
   }
 
   // ===== Data IO (Objects only) =====
+  private storageKey(): string {
+    const uid = localStorage.getItem('userId') || 'anon';
+    return `objectsCards_${uid}`;
+  }
   private getCards(): ObjectCard[] {
-    try { return JSON.parse(localStorage.getItem('objectsCards') || '[]'); }
+    try { return JSON.parse(localStorage.getItem(this.storageKey()) || '[]'); }
     catch { return []; }
   }
   private saveCards(cards: ObjectCard[]) {
-    localStorage.setItem('objectsCards', JSON.stringify(cards));
+    localStorage.setItem(this.storageKey(), JSON.stringify(cards));
   }
 
   // ===== Card navigation =====
