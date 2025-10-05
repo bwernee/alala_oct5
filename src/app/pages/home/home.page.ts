@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { FirebaseService } from '../../services/firebase.service';
+import type { Unsubscribe } from '@firebase/firestore';
 
 type UUID = string;
 
@@ -40,6 +41,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   // listeners
   private profileListener?: (e: any) => void;
+  private sessionsUnsub?: Unsubscribe;
 
   constructor(
     private router: Router,
@@ -53,6 +55,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.loadCategories();
     this.loadUserProfile();
     this.loadTodayStats();
+    this.attachRealtimeToday();
 
     // Update Home immediately when Settings saves profile
     this.profileListener = () => this.loadUserProfile();
@@ -63,6 +66,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.profileListener) {
       window.removeEventListener('user-profile-updated', this.profileListener);
     }
+    try { this.sessionsUnsub?.(); } catch {}
   }
 
   ionViewWillEnter() {
@@ -104,6 +108,35 @@ export class HomePage implements OnInit, OnDestroy {
       console.error('Error loading today\'s stats:', error);
       this.todayStats = { accuracy: 0, cardsToday: 0, avgTime: 0 };
     }
+  }
+
+  private attachRealtimeToday() {
+    try {
+      this.sessionsUnsub?.();
+      this.sessionsUnsub = this.firebaseService.subscribeToGameSessions((sessions) => {
+        // Filter for today and update stats in realtime
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        const todaySessions = (sessions || []).filter((s: any) => {
+          const t = new Date(s.timestamp);
+          return t >= startOfDay && t <= endOfDay;
+        });
+
+        if (todaySessions.length === 0) {
+          this.todayStats = { accuracy: 0, cardsToday: 0, avgTime: 0 };
+          return;
+        }
+        const totalQuestions = todaySessions.reduce((sum: number, s: any) => sum + (s.totalQuestions || 0), 0);
+        const totalCorrect  = todaySessions.reduce((sum: number, s: any) => sum + (s.correctAnswers || 0), 0);
+        const totalTime     = todaySessions.reduce((sum: number, s: any) => sum + (s.totalTime || 0), 0);
+        this.todayStats = {
+          accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+          cardsToday: totalQuestions,
+          avgTime: totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0
+        };
+      });
+    } catch {}
   }
 
   async getTodaySessions() {

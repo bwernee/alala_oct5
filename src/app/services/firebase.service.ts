@@ -415,6 +415,32 @@ export class FirebaseService {
     return querySnapshot.docs.map(doc => doc.data() as GameSession);
   }
 
+  /** Realtime subscription to user's game sessions */
+  subscribeToGameSessions(onChange: (sessions: GameSession[]) => void): Unsubscribe {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    const colRef = collection(this.firestore, 'users', user.uid, 'userProgress', 'stats', 'gameSessions');
+    const qy = query(colRef, orderBy('timestamp', 'desc'), limit(500));
+    return onSnapshot(qy, (snap) => {
+      const list = snap.docs.map(d => d.data() as GameSession);
+      onChange(list);
+    });
+  }
+
+  /** Update a flashcard under users/{uid}/flashcards/{cardId} */
+  async updateFlashcard(cardId: string, updates: Partial<Record<string, any>>): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    await updateDoc(doc(this.firestore, 'users', user.uid, 'flashcards', cardId), this.sanitizeForFirestore(updates));
+  }
+
+  /** Delete a flashcard under users/{uid}/flashcards/{cardId} */
+  async deleteFlashcard(cardId: string): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    await deleteDoc(doc(this.firestore, 'users', user.uid, 'flashcards', cardId));
+  }
+
   async saveUserProgress(progressData: Partial<UserProgress>): Promise<void> {
     const user = this.getCurrentUser();
     if (!user) throw new Error('User not authenticated');

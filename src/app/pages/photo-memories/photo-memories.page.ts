@@ -151,7 +151,16 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
     if (!raw) return [];
     try {
       const arr = JSON.parse(raw) as RawCard[];
-      return arr
+      // De-duplicate by label+image within the list
+      const seen = new Set<string>();
+      const unique = arr.filter((c) => {
+        const label = (c.label || c.name || '').toString().trim().toLowerCase();
+        const image = (c.image || c.photo || c.photoUrl || c.imagePath || '').toString();
+        const key = `${label}::${image}`;
+        if (seen.has(key)) return false;
+        seen.add(key); return true;
+      });
+      return unique
         .map((c, i) => this.normalizeBuiltin(c, cat, key, i))
         .filter((x): x is UnifiedCard => !!x && !!x.label && !!x.image);
     } catch {
@@ -242,6 +251,7 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
 
   // Handle realtime insert events by reloading the unified list
   private onFlashcardAdded = (_e: CustomEvent) => {
+    // Rely on single-source reload to avoid double insertions
     const prev = this.currentCard?.id;
     this.loadAll();
     if (this.cards.length === 0) { this.idx = -1; return; }
