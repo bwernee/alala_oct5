@@ -47,6 +47,9 @@ export class PeoplePage implements OnInit, OnDestroy {
 
     // React to Patient Mode changes from Home
     window.addEventListener('patientMode-changed', this.modeListener);
+
+    // Listen for realtime inserts from Add Flashcard
+    window.addEventListener('flashcard-added', this.onFlashcardAdded as any);
   }
 
   // Refresh when returning from Add page
@@ -66,6 +69,7 @@ export class PeoplePage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     window.removeEventListener('patientMode-changed', this.modeListener);
+    window.removeEventListener('flashcard-added', this.onFlashcardAdded as any);
     this.stopAudio();
     this.persistSessionHistory();
   }
@@ -88,6 +92,26 @@ export class PeoplePage implements OnInit, OnDestroy {
   }
   private saveCards(cards: PeopleCard[]) {
     localStorage.setItem(this.storageKey(), JSON.stringify(cards));
+  }
+
+  private onFlashcardAdded = (e: CustomEvent) => {
+    const detail: any = (e as any).detail;
+    const uid = localStorage.getItem('userId') || 'anon';
+    // Only react to built-in People cards for this page
+    if (!detail || detail.kind !== 'builtin' || detail.category !== 'people') return;
+
+    const list = this.getCards();
+    const card = {
+      id: `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`,
+      label: detail.card?.label,
+      image: detail.card?.image,
+      audio: detail.card?.audio || undefined,
+      duration: Number(detail.card?.duration || 0)
+    } as PeopleCard;
+    list.push(card);
+    this.saveCards(list);
+    this.peopleCards = list;
+    if (!this.currentCard) this.setCard(0);
   }
 
   // ===== Card navigation =====

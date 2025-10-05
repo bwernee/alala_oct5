@@ -13,6 +13,7 @@ import {
 import { ActionSheetController, AlertController, Platform } from '@ionic/angular';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseService } from '../../services/firebase.service';
 
 interface VideoMeta {
   id: string;
@@ -77,6 +78,7 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
     private zone: NgZone,
     private actionSheetCtrl: ActionSheetController,
     private alertCtrl: AlertController,
+    private firebaseService: FirebaseService,
   ) {}
 
   /* ---------- Lifecycle ---------- */
@@ -93,6 +95,10 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
     await this.restoreFromStorage();
     this.rebuildDisplay();
     this.prepareProgress();
+    // Listen for cross-page realtime video inserts
+    window.addEventListener('video-added', this.onVideoAdded as any);
+    // Cross-device realtime (Firebase)
+    this.attachVideosSubscription();
   }
 
   ngAfterViewInit(): void {
@@ -120,6 +126,8 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
     if (this.patientModeListener) {
       window.removeEventListener('patientMode-changed', this.patientModeListener);
     }
+    window.removeEventListener('video-added', this.onVideoAdded as any);
+    this.detachVideosSubscription();
   }
 
   private syncPatientMode() {
@@ -137,6 +145,14 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
       this.displayVideos = [last, ...this.videos, first];
     }
     this.cdr.detectChanges();
+  }
+
+  /** Pure helper for building looped display array */
+  private makeLoopDisplay(list: VideoView[]): VideoView[] {
+    if (!list || list.length <= 1) return (list || []).slice();
+    const first = list[0];
+    const last = list[list.length - 1];
+    return [last, ...list, first];
   }
 
   /** Map DISPLAY index -> REAL index in `videos` */
@@ -425,6 +441,9 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
     list.unshift(meta);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 
+    // Dispatch same-device realtime event so open views refresh instantly
+    window.dispatchEvent(new CustomEvent('video-added', { detail: { meta, src } }));
+
     return { ...meta, src };
   }
 
@@ -450,6 +469,49 @@ export class VideoMemoriesPage implements OnInit, AfterViewInit, OnDestroy {
       const blob = new Blob([bytes], { type: mime });
       return URL.createObjectURL(blob);
     }
+  }
+
+  private onVideoAdded = (e: CustomEvent) => {
+    try {
+      const detail: any = (e as any).detail;
+      if (!detail || !detail.meta || !detail.src) { this.restoreFromStorage(); return; }
+      const newVid: VideoView = { id: detail.meta.id, path: detail.meta.path, label: detail.meta.label, createdAt: detail.meta.createdAt, poster: detail.meta.poster, src: detail.src };
+      // Avoid duplicates
+      if (this.videos.some(v => v.id === newVid.id)) return;
+      this.videos.unshift(newVid);
+      this.displayVideos = this.makeLoopDisplay(this.videos);
+      this.progress.unshift({ current: 0, duration: 0 });
+      this.cdr.detectChanges();
+    } catch {
+      // fallback to full restore
+      this.restoreFromStorage();
+    }
+  }
+
+  private videosUnsub?: any;
+  private attachVideosSubscription() {
+    try {
+      this.detachVideosSubscription();
+      this.videosUnsub = this.firebaseService.subscribeToVideos((items: any[]) => {
+        const remote: VideoView[] = (items || []).map((v: any) => ({
+          id: v.id,
+          path: (v.storagePath || ''),
+          label: v.label,
+          createdAt: v.createdAt,
+          src: v.downloadURL
+        }));
+        const remoteIds = new Set(remote.map(r => r.id));
+        const localOnly = this.videos.filter(v => !remoteIds.has(v.id));
+        this.videos = [...remote, ...localOnly].sort((a, b) => b.createdAt - a.createdAt);
+        this.rebuildDisplay();
+        this.prepareProgress();
+        this.cdr.detectChanges();
+      });
+    } catch {}
+  }
+  private detachVideosSubscription() {
+    try { if (this.videosUnsub) this.videosUnsub(); } catch {}
+    this.videosUnsub = undefined;
   }
 
   private fileToBase64(file: File): Promise<string> {

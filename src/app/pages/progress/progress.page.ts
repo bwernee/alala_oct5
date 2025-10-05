@@ -30,7 +30,12 @@ export class ProgressPage implements OnInit {
     skippedCards: 0
   };
 
-  categoryStats: any[] = []; // Empty - will be populated from Firebase data
+  categoryStats: any[] = [
+    { name: 'People',        icon: '👤', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+    { name: 'Places',        icon: '📍', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+    { name: 'Objects',       icon: '📦', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+    { name: 'Category Match',icon: '🧩', accuracy: 0, cardsPlayed: 0, avgTime: 0 }
+  ];
 
   recentSessions: any[] = [];
   insights: any[] = [];
@@ -98,9 +103,10 @@ export class ProgressPage implements OnInit {
         this.isFirebaseConnected = false;
       }
       
-      // Fallback to localStorage
+      // Fallback to localStorage (scoped per-user to avoid leakage)
       console.log('📊 Loading from localStorage...');
-      const localData = localStorage.getItem('gameSessions');
+      const uid = localStorage.getItem('userId');
+      const localData = uid ? localStorage.getItem(`gameSessions:${uid}`) : null;
       if (localData) {
         const sessions = JSON.parse(localData);
         console.log(`📊 Found ${sessions.length} localStorage sessions`);
@@ -150,59 +156,40 @@ export class ProgressPage implements OnInit {
   }
 
   calculateCategoryStats(sessions: any[]) {
-    // Reset all categories to 0 first
-    this.categoryStats.forEach(category => {
-      category.cardsPlayed = 0;
-      category.accuracy = 0;
-      category.avgTime = 0;
-    });
+    // Reset baseline
+    this.categoryStats = [
+      { name: 'People',        icon: '👤', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+      { name: 'Places',        icon: '📍', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+      { name: 'Objects',       icon: '📦', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+      { name: 'Category Match',icon: '🧩', accuracy: 0, cardsPlayed: 0, avgTime: 0 }
+    ];
 
-    // Only calculate stats for categories that have actual data
-    this.categoryStats.forEach(category => {
-      const categoryName = category.name.toLowerCase();
+    const byName = (name: string) => this.categoryStats.find(c => c.name === name)!;
 
-      // Get sessions for this specific category
-      const categorySessions = sessions.filter(s => {
-        const sessionCategory = s.category?.toLowerCase() || '';
-
-        // Match exact category names or name-that-memory with specific categories
-        if (categoryName === 'people') {
-          return sessionCategory === 'people' || sessionCategory === 'name-that-memory-people';
-        } else if (categoryName === 'places') {
-          return sessionCategory === 'places' || sessionCategory === 'name-that-memory-places';
-        } else if (categoryName === 'objects') {
-          return sessionCategory === 'objects' || sessionCategory === 'name-that-memory-objects';
-        } else if (categoryName === 'category match') {
-          // Include category-match sessions for the Category Match category
-          console.log(`📊 Checking category-match session: ${sessionCategory}`);
-          return sessionCategory === 'category-match';
-        }
-
-        return sessionCategory === categoryName;
+    const accumulate = (catName: string, sArr: any[]) => {
+      if (sArr.length === 0) return;
+      let totalQuestions = 0, totalCorrect = 0, totalTime = 0;
+      sArr.forEach(s => {
+        totalQuestions += s.totalQuestions || 0;
+        totalCorrect  += s.correctAnswers || 0;
+        totalTime     += s.totalTime || 0;
       });
+      const row = byName(catName);
+      row.cardsPlayed = totalQuestions;
+      row.accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+      row.avgTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0;
+    };
 
-      // Only calculate if there are actual sessions for this category
-      if (categorySessions.length > 0) {
-        let totalQuestions = 0;
-        let totalCorrect = 0;
-        let totalTime = 0;
+    const norm = (s: any) => (s.category || '').toLowerCase();
+    const peopleSessions  = sessions.filter(s => norm(s) === 'people'  || norm(s) === 'name-that-memory-people');
+    const placesSessions  = sessions.filter(s => norm(s) === 'places'  || norm(s) === 'name-that-memory-places');
+    const objectsSessions = sessions.filter(s => norm(s) === 'objects' || norm(s) === 'name-that-memory-objects');
+    const cmSessions      = sessions.filter(s => norm(s) === 'category-match');
 
-        categorySessions.forEach(session => {
-          totalQuestions += session.totalQuestions || 0;
-          totalCorrect += session.correctAnswers || 0;
-          totalTime += session.totalTime || 0;
-        });
-
-        category.cardsPlayed = totalQuestions;
-        category.accuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-        category.avgTime = totalQuestions > 0 ? Math.round(totalTime / totalQuestions) : 0;
-
-        console.log(`📊 ${category.name}: ${totalCorrect}/${totalQuestions} = ${category.accuracy}%`);
-      }
-      // If no sessions for this category, stats remain 0
-    });
-
-    console.log('📊 Category stats:', this.categoryStats.map(c => `${c.name}: ${c.cardsPlayed} cards, ${c.accuracy}%`));
+    accumulate('People', peopleSessions);
+    accumulate('Places', placesSessions);
+    accumulate('Objects', objectsSessions);
+    accumulate('Category Match', cmSessions);
   }
 
   loadRecentSessions(sessions: any[]) {
@@ -266,7 +253,8 @@ export class ProgressPage implements OnInit {
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              display: false
+              display: true,
+              position: 'bottom'
             }
           },
           scales: {
@@ -301,45 +289,67 @@ export class ProgressPage implements OnInit {
 
     try {
       // Get filtered sessions based on selected period
-      const filteredSessions = await this.getGameSessionData();
-      
-      if (filteredSessions.length === 0) {
+      const allSessions = await this.getGameSessionData();
+      if (allSessions.length === 0) {
         console.log('📈 No data for selected period');
         this.hasDataForPeriod = false;
         return {
           labels: ['No Data'],
-          data: [0]
+          datasets: [
+            { label: 'People', data: [0], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.2)' },
+            { label: 'Places', data: [0], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.2)' },
+            { label: 'Objects', data: [0], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.2)' },
+            { label: 'Category Match', data: [0], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.2)' }
+          ]
         };
       }
 
-      console.log(`📈 Found ${filteredSessions.length} sessions for chart`);
+      console.log(`📈 Found ${allSessions.length} sessions for chart`);
 
-      // Generate date range and group data
-      const dateRange = this.getChartDateRange(filteredSessions);
-      const groupedData = this.groupSessionsByDate(filteredSessions);
+      // Build per-category datasets
+      const cats = [
+        { key: 'people', label: 'People', color: '#3b82f6' },
+        { key: 'places', label: 'Places', color: '#10b981' },
+        { key: 'objects', label: 'Objects', color: '#f59e0b' },
+        { key: 'category-match', label: 'Category Match', color: '#ef4444' }
+      ];
 
-      const chartData = {
-        labels: dateRange.map(date => {
-          const d = new Date(date);
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }),
-        data: dateRange.map(date => {
-          const dayData = groupedData[date] || [];
+      // Create date range and map label formatting
+      const dateRange = this.getChartDateRange(allSessions);
+      const labels = dateRange.map(date => {
+        const d = new Date(date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+
+      const datasets = cats.map(cat => {
+        const catSessions = allSessions.filter(s => ((s.category || '').toLowerCase()) === cat.key
+          || (cat.key !== 'category-match' && (s.category || '').toLowerCase() === `name-that-memory-${cat.key}`));
+        const grouped = this.groupSessionsByDate(catSessions);
+        const data = dateRange.map(date => {
+          const dayData = grouped[date] || [];
           if (dayData.length === 0) return 0;
-          
-          const totalCorrect = dayData.reduce((sum: number, session: any) => sum + session.correctAnswers, 0);
-          const totalQuestions = dayData.reduce((sum: number, session: any) => sum + session.totalQuestions, 0);
-          
+          const totalCorrect = dayData.reduce((sum: number, session: any) => sum + (session.correctAnswers || 0), 0);
+          const totalQuestions = dayData.reduce((sum: number, session: any) => sum + (session.totalQuestions || 0), 0);
           return totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
-        })
-      };
+        });
+        return {
+          label: cat.label,
+          data,
+          borderColor: cat.color,
+          backgroundColor: `${cat.color}33`, // translucent fill
+          fill: false,
+          tension: 0.4
+        } as any;
+      });
+
+      const chartData = { labels, datasets };
 
       console.log('📈 Chart data generated:', chartData);
       this.hasDataForPeriod = true;
       return chartData;
     } catch (error) {
       console.error('Error generating chart data:', error);
-      return { labels: ['Error'], data: [0] };
+      return { labels: ['Error'], datasets: [] } as any;
     }
   }
 
@@ -537,17 +547,21 @@ export class ProgressPage implements OnInit {
       // Save to Firebase
       await firebaseService.saveGameSession(sessionWithTimestamp);
       
-      // Also save to localStorage as backup
-      const sessions = JSON.parse(localStorage.getItem('gameSessions') || '[]');
+      // Also save to localStorage as backup (per-user key)
+      const uid = localStorage.getItem('userId');
+      const key = uid ? `gameSessions:${uid}` : 'gameSessions';
+      const sessions = JSON.parse(localStorage.getItem(key) || '[]');
       sessions.push(sessionWithTimestamp);
-      localStorage.setItem('gameSessions', JSON.stringify(sessions));
+      localStorage.setItem(key, JSON.stringify(sessions));
       
     } catch (error) {
       console.error('Error saving game session:', error);
       // Fallback to localStorage only
-      const sessions = JSON.parse(localStorage.getItem('gameSessions') || '[]');
+      const uid = localStorage.getItem('userId');
+      const key = uid ? `gameSessions:${uid}` : 'gameSessions';
+      const sessions = JSON.parse(localStorage.getItem(key) || '[]');
       sessions.push(sessionData);
-      localStorage.setItem('gameSessions', JSON.stringify(sessions));
+      localStorage.setItem(key, JSON.stringify(sessions));
     }
   }
 

@@ -2,6 +2,7 @@ import { Component, ViewChild, ElementRef, ChangeDetectorRef, OnInit } from '@an
 import { Platform, ModalController, NavController } from '@ionic/angular';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MediaService } from '../services/media.service';
+import { FirebaseService } from '../services/firebase.service';
 
 // Native file persistence for images/audio
 import { Capacitor } from '@capacitor/core';
@@ -83,7 +84,8 @@ export class AddFlashcardPage implements OnInit {
     public  mediaService: MediaService,
     private cdr: ChangeDetectorRef,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private firebaseService: FirebaseService
   ) {}
 
   ngOnInit() {
@@ -91,6 +93,7 @@ export class AddFlashcardPage implements OnInit {
     const stateId: string | undefined = st.defaultCategoryId;
     const stateName: string | undefined = st.defaultCategoryName;
     const qpId = this.route.snapshot.queryParamMap.get('defaultCategoryId') || undefined;
+    const qpBuiltin = this.route.snapshot.queryParamMap.get('defaultCategory');
 
     this.defaultCategoryId = (stateId || qpId || null);
     this.defaultCategoryName = stateName || null;
@@ -100,6 +103,9 @@ export class AddFlashcardPage implements OnInit {
     if (this.defaultCategoryId && this.customCategories.some(c => c.id === this.defaultCategoryId)) {
       this.activeTarget = 'custom';
       this.selectedCustomCategoryId = this.defaultCategoryId;
+    } else if (qpBuiltin && ['people','objects','places'].includes(qpBuiltin)) {
+      this.activeTarget = 'builtin';
+      this.category = qpBuiltin as BuiltinCat;
     }
   }
 
@@ -528,10 +534,36 @@ export class AddFlashcardPage implements OnInit {
 
       if (this.activeTarget === 'builtin') {
         const storageKey = `${this.category}Cards` as const;
-        let existing = this.safeGetArray<BuiltinCard>(storageKey);
+        // Scope to user
+        const uid = localStorage.getItem('userId') || 'anon';
+        const scopedKey = `${storageKey}_${uid}`;
+        let existing = this.safeGetArray<BuiltinCard>(scopedKey);
         existing = await this.normalizeMedia(existing);
         existing.push(newCard);
-        this.trySaveWithTrim(storageKey, existing, 1);
+        this.trySaveWithTrim(scopedKey, existing, 1);
+
+        // Also save to Firebase for cross-device sync
+        try {
+          await this.firebaseService.createFlashcard({
+            type: 'photo',
+            label: this.name,
+            src: imageSrc!,
+            audio: audioSrc || null,
+            duration: this.audio ? this.audioDuration : 0,
+            category: this.category
+          } as any);
+        } catch (err) {
+          console.warn('Failed to save flashcard to Firebase', err);
+        }
+
+        // Notify app listeners (same-device realtime)
+        window.dispatchEvent(new CustomEvent('flashcard-added', {
+          detail: {
+            kind: 'builtin',
+            category: this.category,
+            card: newCard
+          }
+        }));
       } else {
         const targetId = this.selectedCustomCategoryId as string;
         const key = this.cardsKeyFor(targetId);
@@ -550,13 +582,46 @@ export class AddFlashcardPage implements OnInit {
         };
         existingCustom.push(customCard);
         this.trySaveWithTrim(key, existingCustom, 1);
+
+        // Also save to Firebase for cross-device sync
+        try {
+          await this.firebaseService.createFlashcard({
+            type: 'photo',
+            label: this.name,
+            src: imageSrc!,
+            audio: audioSrc || null,
+            duration: this.audio ? this.audioDuration : 0,
+            categoryId: targetId
+          } as any);
+        } catch (err) {
+          console.warn('Failed to save custom flashcard to Firebase', err);
+        }
+
+        // Notify app listeners (same-device realtime)
+        window.dispatchEvent(new CustomEvent('flashcard-added', {
+          detail: {
+            kind: 'custom',
+            customCategoryId: targetId,
+            card: customCard
+          }
+        }));
       }
 
-      await this.closeModal({
-        card: { label: this.name, image: imageSrc, audio: audioSrc || null, duration: this.audio ? this.audioDuration : 0 },
-        category: this.activeTarget === 'builtin' ? this.category : 'custom',
-        customCategoryId: this.selectedCustomCategoryId || null
-      });
+      // Navigate back to the originating list (People/Objects/Places or Custom Category)
+      try {
+        if (this.activeTarget === 'builtin') {
+          const dest = this.category === 'people' ? '/people' : this.category === 'objects' ? '/objects' : '/places';
+          await this.safeDismiss();
+          this.router.navigate([dest]);
+        } else if (this.selectedCustomCategoryId) {
+          await this.safeDismiss();
+          this.router.navigate(['/category', this.selectedCustomCategoryId]);
+        } else {
+          await this.closeModal();
+        }
+      } catch {
+        await this.closeModal();
+      }
     } catch (e) {
       console.error(e);
       alert('Failed to save. Storage is full — the newest item was kept. Consider deleting a few older flashcards.');

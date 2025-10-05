@@ -76,6 +76,34 @@
             Create Account
           </ion-button>
         </div>
+
+        <div class="divider">
+          <span>or</span>
+        </div>
+
+        <!-- Security Code / QR Login -->
+        <div class="login-alt">
+          <ion-item class="custom-input">
+            <ion-icon name="qr-code-outline" slot="start"></ion-icon>
+            <ion-input 
+              type="text" 
+              placeholder="Security Code"
+              [(ngModel)]="securityCode"
+              name="securityCode">
+            </ion-input>
+          </ion-item>
+
+          <ion-button expand="block" class="login-btn" (click)="loginWithSecurityCode()" [disabled]="isLoading || !securityCode">
+            <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
+            <span *ngIf="!isLoading">Sign In with Security Code</span>
+            <ion-icon name="log-in-outline" slot="end" *ngIf="!isLoading"></ion-icon>
+          </ion-button>
+
+          <ion-button expand="block" fill="outline" class="login-btn" (click)="scanQRCode()" [disabled]="isLoading">
+            <ion-icon name="scan-outline" slot="start"></ion-icon>
+            Scan QR Code
+          </ion-button>
+        </div>
       </div>
     </div>
   </div>

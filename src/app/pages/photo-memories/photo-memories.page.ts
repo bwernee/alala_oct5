@@ -1,5 +1,7 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { AlertController, ToastController } from '@ionic/angular';
+import { FirebaseService } from '../../services/firebase.service';
+import type { Unsubscribe } from '@firebase/firestore';
 
 // Built-in categories remain
 type BuiltinCategory = 'people' | 'places' | 'objects';
@@ -73,7 +75,9 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
 
    constructor(
     private alertCtrl: AlertController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private firebaseService: FirebaseService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   private onPatientModeChange = (e?: any) => {
@@ -88,6 +92,10 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
 
     // React to Patient Mode changes app-wide
     window.addEventListener('patientMode-changed', this.onPatientModeChange as any);
+    // Live refresh when a flashcard is added anywhere in-app
+    window.addEventListener('flashcard-added', this.onFlashcardAdded as any);
+    // Cross-device realtime sync via Firestore
+    this.attachFlashcardsSubscription();
     window.addEventListener('storage', (ev: StorageEvent) => {
       if (ev.key === 'patientMode') this.onPatientModeChange();
     });
@@ -106,6 +114,8 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopAudio();
     window.removeEventListener('patientMode-changed', this.onPatientModeChange as any);
+    window.removeEventListener('flashcard-added', this.onFlashcardAdded as any);
+    this.detachFlashcardsSubscription();
   }
 
   // ===== Derived =====
@@ -228,6 +238,35 @@ export class PhotoMemoriesPage implements OnInit, OnDestroy {
 
   private saveCustomCards(categoryId: string, list: RawCustomCard[]) {
     localStorage.setItem(`${CARDS_PREFIX}${categoryId}`, JSON.stringify(list));
+  }
+
+  // Handle realtime insert events by reloading the unified list
+  private onFlashcardAdded = (_e: CustomEvent) => {
+    const prev = this.currentCard?.id;
+    this.loadAll();
+    if (this.cards.length === 0) { this.idx = -1; return; }
+    const keep = prev ? this.cards.findIndex(c => c.id === prev) : -1;
+    this.idx = keep >= 0 ? keep : Math.min(Math.max(this.idx, 0), this.cards.length - 1);
+  }
+
+  // ===== Firebase realtime (cross-device) =====
+  private flashcardsUnsub?: Unsubscribe;
+  private attachFlashcardsSubscription() {
+    try {
+      this.detachFlashcardsSubscription();
+      this.flashcardsUnsub = this.firebaseService.subscribeToFlashcards(() => {
+        // When Firestore data changes, rebuild from storage + any mirrored data
+        const prev = this.currentCard?.id;
+        this.loadAll();
+        const keep = prev ? this.cards.findIndex(c => c.id === prev) : -1;
+        this.idx = keep >= 0 ? keep : Math.min(Math.max(this.idx, 0), this.cards.length - 1);
+        this.cdr.detectChanges();
+      });
+    } catch {}
+  }
+  private detachFlashcardsSubscription() {
+    try { this.flashcardsUnsub?.(); } catch {}
+    this.flashcardsUnsub = undefined;
   }
 
   // ===== Navigation =====

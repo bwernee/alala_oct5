@@ -10,9 +10,9 @@
     <!-- Title (center) -->
     <ion-title class="app-title">ALALA</ion-title>
 
-    <!-- Settings + Add button (right) -->
+    <!-- Add button (right) -->
     <ion-buttons slot="end">
-      <ion-button class="icon-btn settings-btn" fill="clear" routerLink="/add-flashcard" *ngIf="!isPatientMode">
+      <ion-button class="icon-btn settings-btn" fill="clear" [routerLink]="['/add-flashcard']" [queryParams]="{ defaultCategory: 'objects' }" *ngIf="!isPatientMode">
         <ion-icon name="add-circle-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -42,7 +42,8 @@
         <p class="empty-message">Add some familiar objects to get started.</p>
         <ion-button
           color="primary"
-          routerLink="/add-flashcard"
+          [routerLink]="['/add-flashcard']"
+          [queryParams]="{ defaultCategory: 'objects' }"
           expand="block"
           class="btn-grad-purple big-btn"
           *ngIf="!isPatientMode">

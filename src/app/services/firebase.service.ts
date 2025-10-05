@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User } from '@angular/fire/auth';
 import { Firestore, doc, setDoc, getDoc, addDoc, collection, query, where, orderBy, limit, getDocs, updateDoc, deleteDoc, writeBatch } from '@angular/fire/firestore';
+import { onSnapshot, Unsubscribe } from '@firebase/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -162,6 +163,9 @@ export class FirebaseService {
 
     await setDoc(doc(this.firestore, 'users', uid), this.sanitizeForFirestore(userData));
 
+    // Initialize zeroed progress document so Progress Page shows 0s by default
+    await this.initializeUserProgress(uid);
+
     return userCredential.user;
   }
 
@@ -206,6 +210,20 @@ export class FirebaseService {
     }
 
     return cardId;
+  }
+
+  /**
+   * Realtime subscription to user's flashcards under users/{uid}/flashcards
+   */
+  subscribeToFlashcards(onChange: (cards: any[]) => void): Unsubscribe {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    const cardsCol = collection(this.firestore, 'users', user.uid, 'flashcards');
+    const qy = query(cardsCol, orderBy('createdAt', 'desc'));
+    return onSnapshot(qy, (snap) => {
+      const list = snap.docs.map(d => d.data());
+      onChange(list);
+    });
   }
 
   /**
@@ -259,6 +277,14 @@ export class FirebaseService {
   }
 
   async logout(): Promise<void> {
+    // Clear any local caches that could leak between accounts
+    try {
+      const lastUid = localStorage.getItem('userId');
+      localStorage.removeItem('gameSessions'); // legacy key
+      if (lastUid) localStorage.removeItem(`gameSessions:${lastUid}`);
+      ['peopleCards','placesCards','objectsCards'].forEach(k => localStorage.removeItem(k));
+    } catch {}
+
     await signOut(this.auth);
   }
 
@@ -414,6 +440,94 @@ export class FirebaseService {
     const docRef = doc(this.firestore, 'users', targetUserId, 'userProgress', 'stats');
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() as UserProgress : null;
+  }
+
+  // ===== VIDEOS (Firebase Storage + Firestore metadata) =====
+  /** Upload a user video to Firebase Storage and create metadata under users/{uid}/videos */
+  async uploadUserVideo(file: Blob, label?: string): Promise<{ id: string; downloadURL: string; createdAt: number; storagePath: string; label?: string; }> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const id = `vid_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const path = `videos/${id}.mp4`;
+    const storageRef = ref(this.storage, `users/${user.uid}/${path}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+
+    const meta = { id, userId: user.uid, storagePath: path, downloadURL: url, label: label || null, createdAt: Date.now() } as any;
+    await setDoc(doc(this.firestore, 'users', user.uid, 'videos', id), this.sanitizeForFirestore(meta));
+    return { id, downloadURL: url, createdAt: meta.createdAt, storagePath: path, label };
+  }
+
+  /** Subscribe to user's videos metadata for realtime updates */
+  subscribeToVideos(onChange: (videos: Array<{ id: string; downloadURL: string; label?: string; createdAt: number }>) => void): Unsubscribe {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    const colRef = collection(this.firestore, 'users', user.uid, 'videos');
+    const qy = query(colRef, orderBy('createdAt', 'desc'));
+    return onSnapshot(qy, (snap) => {
+      const list = snap.docs.map(d => d.data() as any).map(v => ({ id: v.id, downloadURL: v.downloadURL, label: v.label || undefined, createdAt: v.createdAt }));
+      onChange(list);
+    });
+  }
+
+  async deleteUserVideo(videoId: string): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    const docRef = doc(this.firestore, 'users', user.uid, 'videos', videoId);
+    const metaSnap = await getDoc(docRef);
+    const meta: any = metaSnap.exists() ? metaSnap.data() : null;
+    if (meta?.storagePath) {
+      try { await deleteObject(ref(this.storage, `users/${user.uid}/${meta.storagePath}`)); } catch {}
+    }
+    await deleteDoc(docRef);
+  }
+
+  // ===== SECURITY CODE LOOKUP =====
+  async findUserBySecurityCode(securityCode: string): Promise<{ uid: string; email?: string; name?: string } | null> {
+    const qy = query(collection(this.firestore, 'users'), where('securityCode', '==', securityCode));
+    const snap = await getDocs(qy);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    const data: any = d.data();
+    return { uid: d.id, email: data?.email, name: data?.name };
+  }
+
+  /** Ensure a zeroed progress document exists for a user */
+  private async initializeUserProgress(uid: string): Promise<void> {
+    const statsRef = doc(this.firestore, 'users', uid, 'userProgress', 'stats');
+    const existing = await getDoc(statsRef);
+    if (existing.exists()) return;
+
+    const zeroProgress: UserProgress = {
+      overallStats: {
+        accuracy: 0,
+        avgTimePerCard: 0,
+        totalCards: 0,
+        skippedCards: 0
+      },
+      categoryStats: [
+        { name: 'People',  icon: '👤', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+        { name: 'Places',  icon: '📍', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+        { name: 'Objects', icon: '📦', accuracy: 0, cardsPlayed: 0, avgTime: 0 },
+        { name: 'Category Match', icon: '🧩', accuracy: 0, cardsPlayed: 0, avgTime: 0 }
+      ],
+      categoryMatch: {
+        sessions: {},
+        totalSessions: 0,
+        overallAccuracy: 0
+      },
+      lastCalculated: new Date().toISOString()
+    };
+
+    await setDoc(statsRef, this.sanitizeForFirestore(zeroProgress));
+  }
+
+  /** Public helper to initialize progress for current user (used after login) */
+  async ensureProgressInitialized(): Promise<void> {
+    const user = this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+    await this.initializeUserProgress(user.uid);
   }
 
   // ===== CATEGORY MATCH PROGRESS TRACKING =====

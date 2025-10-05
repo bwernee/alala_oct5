@@ -48,6 +48,9 @@ export class PlacesPage implements OnInit, OnDestroy {
 
     // React to Patient Mode changes from Home
     window.addEventListener('patientMode-changed', this.modeListener);
+
+    // Realtime insert listener for built-in Places
+    window.addEventListener('flashcard-added', this.onFlashcardAdded as any);
   }
 
   ionViewWillEnter() {
@@ -65,6 +68,7 @@ export class PlacesPage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     window.removeEventListener('patientMode-changed', this.modeListener);
+    window.removeEventListener('flashcard-added', this.onFlashcardAdded as any);
     this.stopAudio();
     this.persistSessionHistory();
   }
@@ -87,6 +91,24 @@ export class PlacesPage implements OnInit, OnDestroy {
   }
   private saveCards(cards: PlaceCard[]) {
     localStorage.setItem(this.storageKey(), JSON.stringify(cards));
+  }
+
+  private onFlashcardAdded = (e: CustomEvent) => {
+    const detail: any = (e as any).detail;
+    if (!detail || detail.kind !== 'builtin' || detail.category !== 'places') return;
+
+    const list = this.getCards();
+    const card = {
+      id: `${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`,
+      label: detail.card?.label,
+      image: detail.card?.image,
+      audio: detail.card?.audio || undefined,
+      duration: Number(detail.card?.duration || 0)
+    } as PlaceCard;
+    list.push(card);
+    this.saveCards(list);
+    this.placeCards = list;
+    if (!this.currentCard) this.setCard(0);
   }
 
   // ===== Card navigation =====

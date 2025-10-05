@@ -131,8 +131,10 @@ export class HomePage implements OnInit, OnDestroy {
       return todaySessions;
     } catch (error) {
       console.error('Error getting today\'s sessions:', error);
-      // Fallback to localStorage
-      const sessions = localStorage.getItem('gameSessions');
+      // Fallback to localStorage (per-user)
+      const uid = localStorage.getItem('userId');
+      const key = uid ? `gameSessions:${uid}` : 'gameSessions';
+      const sessions = localStorage.getItem(key);
       if (!sessions) return [];
 
       const allSessions = JSON.parse(sessions);

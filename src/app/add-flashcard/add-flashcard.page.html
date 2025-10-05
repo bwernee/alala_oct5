@@ -36,23 +36,10 @@
 </div>
 
 
-    <!-- Built-in categories (People / Objects / Places) -->
+    <!-- Built-in category indicator (no dropdown; inferred from where Add was clicked) -->
     <div class="section" *ngIf="activeTarget === 'builtin'">
       <div class="section-title">Built-in Category</div>
-      <ion-segment [(ngModel)]="category" mode="ios" class="big-segment" (ionChange)="clearCustomSelection()">
-        <ion-segment-button value="people">
-          <ion-icon name="people-circle-outline"></ion-icon>
-          <ion-label>People</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="objects">
-          <ion-icon name="cube-outline"></ion-icon>
-          <ion-label>Objects</ion-label>
-        </ion-segment-button>
-        <ion-segment-button value="places">
-          <ion-icon name="location-outline"></ion-icon>
-          <ion-label>Places</ion-label>
-        </ion-segment-button>
-      </ion-segment>
+      <div class="hint">Saving to: <strong>{{ category | titlecase }}</strong></div>
     </div>
 
     <!-- Custom categories strip (sticky style, fixed position within page) -->
